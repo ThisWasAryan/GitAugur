@@ -1,8 +1,13 @@
 import { GitPullRequest, CheckCircle2 } from "lucide-react";
+import { useState } from "react";
 import { usePRStore } from "../../stores/usePRStore";
+import { ActionPreviewModal } from "../preview/ActionPreviewModal";
+import { useInspectorStore } from "../../stores/useInspectorStore";
 
 export function PullRequestsView() {
   const pullRequests = usePRStore(state => state.pullRequests);
+  const [preview, setPreview] = useState<{isOpen: boolean, source: string, target: string}>({ isOpen: false, source: "", target: "" });
+  const inspectEntity = useInspectorStore(state => state.inspectEntity);
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-950 p-8 overflow-auto">
@@ -17,7 +22,11 @@ export function PullRequestsView() {
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
         <div className="divide-y divide-slate-800/50">
           {pullRequests.map(pr => (
-            <div key={pr.id} className="p-6 hover:bg-slate-800/30 transition-colors">
+            <div 
+              key={pr.id} 
+              className="p-6 hover:bg-slate-800/30 transition-colors cursor-pointer"
+              onClick={() => inspectEntity('pr', pr.id)}
+            >
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-200 mb-1">{pr.title}</h3>
@@ -38,8 +47,11 @@ export function PullRequestsView() {
                       </span>
                     )}
                   </div>
-                  <button className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded transition-colors border border-slate-700">
-                    Checkout Branch
+                  <button 
+                    onClick={() => setPreview({ isOpen: true, source: pr.sourceBranch, target: pr.targetBranch })}
+                    className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium rounded transition-colors shadow-lg shadow-purple-900/20"
+                  >
+                    Merge Pull Request
                   </button>
                 </div>
               </div>
@@ -47,6 +59,18 @@ export function PullRequestsView() {
           ))}
         </div>
       </div>
+
+      <ActionPreviewModal 
+        isOpen={preview.isOpen}
+        onClose={() => setPreview({ ...preview, isOpen: false })}
+        onConfirm={() => {
+          // Mock merge action
+          console.log(`Merged ${preview.source} into ${preview.target}`);
+        }}
+        action="MERGE"
+        branchName={preview.source}
+        targetBranch={preview.target}
+      />
     </div>
   );
 }

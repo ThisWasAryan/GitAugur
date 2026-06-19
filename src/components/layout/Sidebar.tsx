@@ -44,7 +44,7 @@ export function Sidebar() {
           {navItems.map((item) => (
             <li key={item.name}>
               <button 
-                onClick={() => item.name !== "Stashes" && setActiveView(item.name as ViewType)}
+                onClick={() => setActiveView(item.name as ViewType)}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white transition-colors ${activeView === item.name ? 'bg-slate-800 text-white' : ''}`}
               >
                 <div className="flex items-center gap-3">
@@ -61,7 +61,10 @@ export function Sidebar() {
                 <ul className="mt-1 ml-4 space-y-1 pl-3 border-l border-slate-700/50">
                   {pullRequests.map(pr => (
                     <li key={pr.id}>
-                      <button className="w-full text-left block px-2 py-1.5 rounded hover:bg-slate-800/80 transition-colors">
+                      <button 
+                        onClick={() => setActiveView('Pull Requests')}
+                        className="w-full text-left block px-2 py-1.5 rounded hover:bg-slate-800/80 transition-colors"
+                      >
                         <div className="text-xs text-slate-300 font-medium truncate" title={pr.title}>
                           {pr.title}
                         </div>
@@ -80,7 +83,10 @@ export function Sidebar() {
       </div>
 
       <div className="mt-auto p-4 border-t border-slate-800">
-        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white transition-colors">
+        <button 
+          onClick={() => setActiveView('Settings' as ViewType)}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white transition-colors ${activeView === 'Settings' ? 'bg-slate-800 text-white' : ''}`}
+        >
           <Settings className="w-4 h-4" />
           <span className="text-sm font-medium">Settings</span>
         </button>

@@ -1,17 +1,22 @@
 import type { GitHistory } from "../types/git";
-import type { Node, Edge } from "@xyflow/react";
-import type { GraphMode } from "../stores/useNavigationStore";
+import { type Node, type Edge, MarkerType } from "@xyflow/react";
+import type { PreviewState } from "../engine/GitEngineStore";
 
-export function buildGraphLayout(history: GitHistory, mode: GraphMode = 'GIT_GRAPH'): { nodes: Node[], edges: Edge[] } {
+export function buildGraphLayout(history: GitHistory, preview?: PreviewState): { nodes: Node[], edges: Edge[] } {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
 
-  // Determine geometry based on mode
-  const LANE_WIDTH = mode === 'REPO_FLOW' ? 120 : (mode === 'TIMELINE' ? 0 : 24);
-  const Y_SPACING = mode === 'REPO_FLOW' ? 80 : (mode === 'TIMELINE' ? 60 : 40);
+  const LANE_WIDTH = 24;
+  const Y_SPACING = 40;
+
+  // Inject ghost commit if active
+  const commitsToLayout = [...history.commits];
+  if (preview?.active && preview.ghostCommit) {
+    commitsToLayout.push(preview.ghostCommit);
+  }
 
   // Sort commits newest first
-  const sortedCommits = [...history.commits].sort((a, b) => 
+  const sortedCommits = commitsToLayout.sort((a, b) => 
     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
 
@@ -52,32 +57,8 @@ export function buildGraphLayout(history: GitHistory, mode: GraphMode = 'GIT_GRA
   });
   const totalLanes = maxLanes + 1;
 
-  // If REPO_FLOW, generate background lane nodes
-  if (mode === 'REPO_FLOW') {
-    const laneColors = ["rgba(59,130,246,0.05)", "rgba(168,85,247,0.05)", "rgba(34,197,94,0.05)", "rgba(249,115,22,0.05)", "rgba(236,72,153,0.05)"];
-    for (let i = 0; i < totalLanes; i++) {
-      nodes.push({
-        id: `lane-bg-${i}`,
-        type: 'default', // Using default node but heavily styled, or we can use a custom type if needed. We'll use a standard group node style.
-        position: { x: i * LANE_WIDTH - (LANE_WIDTH/2) + 12, y: -100 }, // Center behind the dots
-        data: { label: '' },
-        style: {
-          width: LANE_WIDTH - 16,
-          height: sortedCommits.length * Y_SPACING + 200,
-          backgroundColor: laneColors[i % laneColors.length],
-          border: 'none',
-          borderRadius: 8,
-          zIndex: -1,
-          pointerEvents: 'none'
-        },
-        selectable: false,
-        draggable: false
-      });
-    }
-  }
-
   sortedCommits.forEach((commit, index) => {
-    const lane = mode === 'TIMELINE' ? 0 : (laneMap.get(commit.hash) || 0);
+    const lane = laneMap.get(commit.hash) || 0;
     
     const commitBranches = history.branches.filter(b => b.commitHash === commit.hash);
     const commitTags = history.tags.filter(t => t.commitHash === commit.hash);
@@ -91,28 +72,33 @@ export function buildGraphLayout(history: GitHistory, mode: GraphMode = 'GIT_GRA
         branches: commitBranches,
         tags: commitTags,
         lane,
-        totalLanes: mode === 'TIMELINE' ? 1 : totalLanes,
-        mode
+        totalLanes,
+        mode: 'GIT_GRAPH'
       },
     });
 
-    if (mode !== 'TIMELINE') {
-      commit.parentHashes.forEach((parentHash, parentIndex) => {
-        const isMergeEdge = parentIndex > 0;
-        
-        edges.push({
-          id: `e-${commit.hash}-${parentHash}`,
-          source: commit.hash,
-          target: parentHash,
-          type: mode === 'REPO_FLOW' ? 'smoothstep' : 'bezier',
-          animated: false,
-          style: {
-            stroke: isMergeEdge ? "#8b5cf6" : "#3b82f6", 
-            strokeWidth: mode === 'REPO_FLOW' ? 3 : 2, 
-          },
-        });
+    commit.parentHashes.forEach((parentHash, parentIndex) => {
+      const isMergeEdge = parentIndex > 0;
+      
+      edges.push({
+        id: `e-${commit.hash}-${parentHash}`,
+        source: commit.hash,
+        target: parentHash,
+        type: 'strict',
+        animated: !!commit.isGhost,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 20,
+          height: 20,
+          color: commit.isGhost ? "#64748b" : (isMergeEdge ? "#8b5cf6" : "#3b82f6"),
+        },
+        style: {
+          stroke: commit.isGhost ? "#64748b" : (isMergeEdge ? "#8b5cf6" : "#3b82f6"), 
+          strokeWidth: 2, 
+          strokeDasharray: commit.isGhost ? "5,5" : "none",
+        },
       });
-    }
+    });
   });
 
   return { nodes, edges };

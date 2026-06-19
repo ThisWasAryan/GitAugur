@@ -9,6 +9,8 @@ export interface GitCommit {
   author: GitAuthor;
   timestamp: string; // ISO string
   parentHashes: string[]; // Support for merge commits
+  isGhost?: boolean; // For preview nodes
+  files?: any[]; // Files changed in this commit
 }
 
 export interface GitBranch {

@@ -11,21 +11,26 @@ import type { NodeTypes } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import { CommitNode } from "./CommitNode";
-import { mockGitHistory } from "../../services/mockData";
 import { buildGraphLayout } from "../../utils/graphLayout";
 import { useNavigationStore } from "../../stores/useNavigationStore";
+import { useGitEngineStore } from "../../engine/GitEngineStore";
+import { StrictLaneEdge } from "./StrictLaneEdge";
 
 const nodeTypes: NodeTypes = {
   commit: CommitNode as any,
 };
 
+const edgeTypes = {
+  strict: StrictLaneEdge,
+};
+
 export function CommitGraph() {
   const graphMode = useNavigationStore(state => state.graphMode);
+  const { history, preview } = useGitEngineStore();
 
-  // Compute layout whenever mode changes
   const layout = useMemo(() => {
-    return buildGraphLayout(mockGitHistory, graphMode);
-  }, [graphMode]);
+    return buildGraphLayout(history, preview);
+  }, [history, preview, graphMode]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layout.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layout.edges);
@@ -43,11 +48,15 @@ export function CommitGraph() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.5}
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={true}
       >
         <Background color="#334155" gap={24} size={1.5} />
         <Controls className="bg-slate-900 border-slate-800 fill-slate-300" />

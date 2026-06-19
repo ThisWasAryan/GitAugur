@@ -1,6 +1,10 @@
 import { Tags, Plus } from "lucide-react";
+import { useGitEngineStore } from "../../engine/GitEngineStore";
+import { formatDistanceToNow } from "date-fns";
 
 export function TagsView() {
+  const { history } = useGitEngineStore();
+
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-950 p-8 overflow-auto">
       <div className="flex items-center justify-between mb-8">
@@ -19,30 +23,31 @@ export function TagsView() {
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
         <div className="divide-y divide-slate-800/50">
-          <div className="px-6 py-4 flex items-center justify-between hover:bg-slate-800/50 transition-colors">
-            <div className="flex items-center gap-4">
-              <Tags className="w-5 h-5 text-slate-500" />
-              <div>
-                <div className="font-semibold text-slate-200">v1.0.0</div>
-                <div className="text-xs text-slate-500 mt-0.5">Initial stable release • 3 days ago</div>
-              </div>
+          {history.tags.length > 0 ? (
+            history.tags.map(tag => {
+              const commit = history.commits.find(c => c.hash === tag.commitHash);
+              const dateStr = commit ? formatDistanceToNow(new Date(commit.timestamp), { addSuffix: true }) : 'Unknown time';
+              
+              return (
+                <div key={tag.name} className="px-6 py-4 flex items-center justify-between hover:bg-slate-800/50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <Tags className="w-5 h-5 text-slate-500" />
+                    <div>
+                      <div className="font-semibold text-slate-200">{tag.name}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">Tagged on {dateStr}</div>
+                    </div>
+                  </div>
+                  <div className="font-mono text-xs text-slate-500 bg-slate-950 px-2 py-1 rounded border border-slate-800">
+                    {tag.commitHash.substring(0, 7)}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="p-8 text-center text-slate-500">
+              No tags found in this repository.
             </div>
-            <div className="font-mono text-xs text-slate-500 bg-slate-950 px-2 py-1 rounded border border-slate-800">
-              1b4a4e5
-            </div>
-          </div>
-          <div className="px-6 py-4 flex items-center justify-between hover:bg-slate-800/50 transition-colors">
-            <div className="flex items-center gap-4">
-              <Tags className="w-5 h-5 text-slate-500" />
-              <div>
-                <div className="font-semibold text-slate-200">v0.9.0-beta</div>
-                <div className="text-xs text-slate-500 mt-0.5">Beta release for testing • 2 weeks ago</div>
-              </div>
-            </div>
-            <div className="font-mono text-xs text-slate-500 bg-slate-950 px-2 py-1 rounded border border-slate-800">
-              f8c32d1
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

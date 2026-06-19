@@ -1,11 +1,13 @@
-import type { GitHistory, GitBranch, GitTag } from "../types/git";
+import type { GitHistory, GitBranch, GitTag } from '../types/git';
+import type { FileStatus } from './GitEngineStore';
 
 export const mockBranches: GitBranch[] = [
   { name: "main", commitHash: "h-005", isCurrent: false, isRemote: false },
   { name: "origin/main", commitHash: "h-005", isCurrent: false, isRemote: true },
-  { name: "feature/login-system", commitHash: "h-007", isCurrent: true, isRemote: false },
+  { name: "feature/login-system", commitHash: "h-007", isCurrent: false, isRemote: false },
   { name: "bugfix/sidebar-overflow", commitHash: "h-008", isCurrent: false, isRemote: false },
   { name: "experiment/old-ui", commitHash: "h-003", isCurrent: false, isRemote: false },
+  { name: "experimental", commitHash: "exp-003", isCurrent: true, isRemote: false }, // Most advanced branch
 ];
 
 export const mockTags: GitTag[] = [
@@ -13,9 +15,9 @@ export const mockTags: GitTag[] = [
   { name: "v1.1.0-beta", commitHash: "h-005" }
 ];
 
-export const mockGitHistory: GitHistory = {
+export const mockHistory: GitHistory = {
   commits: [
-    // --- MAIN TIMELINE (Lane 0) ---
+    // --- MAIN TIMELINE ---
     {
       hash: "h-001",
       message: "Initial commit: Setup Vite + React",
@@ -37,8 +39,6 @@ export const mockGitHistory: GitHistory = {
       timestamp: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
       parentHashes: ["h-002"]
     },
-
-    // --- STALE EXPERIMENT (Lane 1) branched from h-003 ---
     {
       hash: "e-001",
       message: "Experiment with glassmorphism UI",
@@ -46,8 +46,6 @@ export const mockGitHistory: GitHistory = {
       timestamp: new Date(Date.now() - 19 * 24 * 60 * 60 * 1000).toISOString(),
       parentHashes: ["h-003"]
     },
-
-    // --- MAIN CONTINUES ---
     {
       hash: "h-004",
       message: "Implement global Zustand stores",
@@ -62,8 +60,6 @@ export const mockGitHistory: GitHistory = {
       timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
       parentHashes: ["h-004", "a-002"]
     },
-
-    // --- OLD AUTH BRANCH (Merged at h-005) ---
     {
       hash: "a-001",
       message: "Add Firebase dependencies",
@@ -78,8 +74,6 @@ export const mockGitHistory: GitHistory = {
       timestamp: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
       parentHashes: ["a-001"]
     },
-
-    // --- ACTIVE FEATURE: feature/login-system (Lane 2) branched from h-005 ---
     {
       hash: "h-006",
       message: "Connect login form to Firebase Auth",
@@ -94,16 +88,56 @@ export const mockGitHistory: GitHistory = {
       timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
       parentHashes: ["h-006"]
     },
-
-    // --- ACTIVE BUGFIX: bugfix/sidebar-overflow (Lane 3) branched from h-005 ---
     {
       hash: "h-008",
       message: "Fix sidebar scrolling on small screens",
       author: { name: "Bob Engineer", email: "bob@example.com" },
       timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
       parentHashes: ["h-005"]
+    },
+    
+    // --- EXPERIMENTAL BRANCH --- (Branched from h-005, extremely advanced)
+    {
+      hash: "exp-001",
+      message: "WIP: Rewrite core engine in Rust (WASM)",
+      author: { name: "Eve Hacker", email: "eve@example.com" },
+      timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+      parentHashes: ["h-005"]
+    },
+    {
+      hash: "exp-002",
+      message: "Add predictive diffing algorithms",
+      author: { name: "Eve Hacker", email: "eve@example.com" },
+      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      parentHashes: ["exp-001"]
+    },
+    {
+      hash: "exp-003",
+      message: "Integrate Tauri backend bindings",
+      author: { name: "Eve Hacker", email: "eve@example.com" },
+      timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+      parentHashes: ["exp-002"]
     }
   ],
   branches: mockBranches,
   tags: mockTags
+};
+
+const mockUnstagedFiles: FileStatus[] = [
+  { path: "src-tauri/Cargo.toml", status: "modified", diff: "@@ -10,3 +10,4 @@\n [dependencies]\n tauri = { version = \"1.4\", features = [\"shell-open\"] }\n serde = { version = \"1.0\", features = [\"derive\"] }\n+serde_json = \"1.0\"" },
+  { path: "src/engine/Predictor.ts", status: "untracked" },
+  { path: "src/components/layout/Sidebar.tsx", status: "modified" },
+];
+
+const mockStagedFiles: FileStatus[] = [
+  { path: "src/types/engine.ts", status: "added", diff: "@@ -0,0 +1,10 @@\n+export interface EngineState {\n+  version: string;\n+  ready: boolean;\n+}" },
+  { path: "package.json", status: "modified", diff: "@@ -15,4 +15,5 @@\n   \"dependencies\": {\n     \"react\": \"^18.2.0\",\n     \"zustand\": \"^4.4.1\",\n+    \"tauri-plugin-fs-extra\": \"^1.0.0\"\n   }" },
+  { path: "legacy-script.js", status: "deleted" },
+];
+
+export const initialMockState = {
+  history: mockHistory,
+  HEAD: "experimental",
+  unstagedFiles: mockUnstagedFiles,
+  stagedFiles: mockStagedFiles
 };

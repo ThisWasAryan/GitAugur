@@ -1,4 +1,4 @@
-import { useStagingStore } from "../../stores/useStagingStore";
+import { useGitEngineStore } from "../../engine/GitEngineStore";
 import { FileStatusList } from "./FileStatusList";
 import { CommitForm } from "./CommitForm";
 
@@ -10,7 +10,7 @@ export function StagingPanel() {
     unstageFile, 
     stageAll, 
     unstageAll 
-  } = useStagingStore();
+  } = useGitEngineStore();
 
   return (
     <div className="w-80 h-full bg-slate-900 border-l border-slate-800 flex flex-col shrink-0">

@@ -1,0 +1,109 @@
+import { useGitEngineStore } from "../../engine/GitEngineStore";
+import { useInspectorStore } from "../../stores/useInspectorStore";
+import { X, GitCommit, Clock, User, GitBranch } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+
+export function CommitInspector() {
+  const { history } = useGitEngineStore();
+  const { inspectedEntityId, showStaging } = useInspectorStore();
+
+  const commit = history.commits.find(c => c.hash === inspectedEntityId);
+
+  if (!commit) {
+    return (
+      <div className="w-80 h-full bg-slate-900 border-l border-slate-800 flex flex-col shrink-0 p-4">
+        <div className="text-slate-400">Commit not found.</div>
+        <button onClick={showStaging} className="mt-4 text-blue-400 hover:text-blue-300">Back to Staging</button>
+      </div>
+    );
+  }
+
+  // Get branches containing this commit
+  const branches = history.branches.filter(b => b.commitHash === commit.hash || commit.parentHashes.includes(b.commitHash));
+
+  const files = commit.files || [];
+
+  return (
+    <div className="w-[400px] h-full bg-slate-900 border-l border-slate-800 flex flex-col shrink-0">
+      <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-800/50">
+        <h2 className="font-semibold text-slate-200 flex items-center gap-2">
+          <GitCommit className="w-4 h-4 text-emerald-500" />
+          Commit Details
+        </h2>
+        <button 
+          onClick={showStaging}
+          className="p-1 hover:bg-slate-700 rounded-md text-slate-400 hover:text-slate-200 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-6">
+        {/* Header */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-mono text-xs bg-slate-950 px-2 py-1 rounded text-slate-400 border border-slate-800">
+              {commit.hash.substring(0, 7)}
+            </span>
+          </div>
+          <h3 className="text-lg font-bold text-slate-100">{commit.message}</h3>
+        </div>
+
+        {/* Meta info */}
+        <div className="space-y-3 text-sm">
+          <div className="flex items-center gap-3 text-slate-300">
+            <User className="w-4 h-4 text-slate-500" />
+            <span>{commit.author.name} <span className="text-slate-500">&lt;{commit.author.email}&gt;</span></span>
+          </div>
+          <div className="flex items-center gap-3 text-slate-300">
+            <Clock className="w-4 h-4 text-slate-500" />
+            <span>{formatDistanceToNow(new Date(commit.timestamp), { addSuffix: true })}</span>
+          </div>
+          {branches.length > 0 && (
+            <div className="flex items-center gap-3 text-slate-300">
+              <GitBranch className="w-4 h-4 text-slate-500" />
+              <div className="flex gap-2">
+                {branches.map(b => (
+                  <span key={b.name} className="bg-blue-900/30 text-blue-400 border border-blue-800/50 px-1.5 py-0.5 rounded text-xs">
+                    {b.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Files Changed */}
+        <div className="mt-4 border-t border-slate-800 pt-4">
+          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Files Changed ({files.length})</h4>
+          <div className="space-y-4">
+            {files.map((file: any) => (
+              <div key={file.path} className="border border-slate-800 rounded-lg overflow-hidden">
+                <div className="bg-slate-950 px-3 py-2 text-xs font-mono text-slate-300 flex justify-between items-center border-b border-slate-800">
+                  <span>{file.path}</span>
+                  <span className={`px-1.5 py-0.5 rounded ${file.status === 'added' ? 'text-emerald-400 bg-emerald-950/50' : file.status === 'deleted' ? 'text-rose-400 bg-rose-950/50' : 'text-amber-400 bg-amber-950/50'}`}>
+                    {file.status}
+                  </span>
+                </div>
+                {file.diff && (
+                  <div className="p-2 bg-[#0d1117] overflow-x-auto text-xs">
+                    <pre className="font-mono leading-relaxed">
+                      {file.diff.split('\n').map((line: any, i: any) => {
+                        let colorClass = 'text-slate-300';
+                        if (line.startsWith('+')) colorClass = 'text-emerald-400 bg-emerald-950/20 w-full inline-block';
+                        if (line.startsWith('-')) colorClass = 'text-rose-400 bg-rose-950/20 w-full inline-block';
+                        if (line.startsWith('@@')) colorClass = 'text-blue-400';
+                        return <div key={i} className={colorClass}>{line}</div>;
+                      })}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}

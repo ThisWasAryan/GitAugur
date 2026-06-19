@@ -1,9 +1,9 @@
-import type { FileChange } from "../../stores/useStagingStore";
+import type { FileStatus } from "../../engine/GitEngineStore";
 import { Plus, Minus, File as FileIcon, FilePlus, FileMinus } from "lucide-react";
 
 interface FileStatusListProps {
   title: string;
-  files: FileChange[];
+  files: FileStatus[];
   onAction: (path: string) => void;
   onActionAll: () => void;
   actionIcon: "plus" | "minus";
