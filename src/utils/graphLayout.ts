@@ -1,8 +1,8 @@
 import type { GitHistory } from "../types/git";
 import type { Node, Edge } from "@xyflow/react";
 
-const LANE_WIDTH = 50;
-const Y_SPACING = 120;
+const LANE_WIDTH = 20;
+const Y_SPACING = 40;
 
 export function buildGraphLayout(history: GitHistory): { nodes: Node[], edges: Edge[] } {
   const nodes: Node[] = [];
@@ -13,11 +13,6 @@ export function buildGraphLayout(history: GitHistory): { nodes: Node[], edges: E
     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
 
-  // Simple lane assignment:
-  // For each commit, if we haven't seen it, assign a lane.
-  // Main branch commits (those reachable from main without following second parents) go to lane 0.
-  // This is a naive layout for demonstration.
-  
   const laneMap = new Map<string, number>();
   
   // Find the 'main' branch tip
@@ -37,10 +32,8 @@ export function buildGraphLayout(history: GitHistory): { nodes: Node[], edges: E
   let nextLane = 1;
   sortedCommits.forEach(commit => {
     if (!laneMap.has(commit.hash)) {
-      // Find a parent that has a lane to branch off, or assign a new lane
       laneMap.set(commit.hash, nextLane);
       
-      // Try to keep ancestors in the same lane if possible
       let curr = commit.parentHashes[0];
       while (curr && !laneMap.has(curr)) {
         laneMap.set(curr, nextLane);
@@ -50,6 +43,14 @@ export function buildGraphLayout(history: GitHistory): { nodes: Node[], edges: E
       nextLane++;
     }
   });
+
+  // Calculate maxLanes based on what was actually assigned
+  let maxLanes = 0;
+  laneMap.forEach(lane => {
+    if (lane > maxLanes) maxLanes = lane;
+  });
+  // Add 1 because lanes are 0-indexed
+  const totalLanes = maxLanes + 1;
 
   sortedCommits.forEach((commit, index) => {
     const lane = laneMap.get(commit.hash) || 0;
@@ -66,22 +67,24 @@ export function buildGraphLayout(history: GitHistory): { nodes: Node[], edges: E
         commit,
         branches: commitBranches,
         tags: commitTags,
-        lane
+        lane,
+        totalLanes
       },
     });
 
     // Create edges to parents
     commit.parentHashes.forEach((parentHash, parentIndex) => {
       const isMergeEdge = parentIndex > 0;
+      
       edges.push({
         id: `e-${commit.hash}-${parentHash}`,
         source: commit.hash,
         target: parentHash,
-        type: "smoothstep",
+        type: "bezier",
         animated: false,
         style: {
           stroke: isMergeEdge ? "#8b5cf6" : "#3b82f6", // Purple for merge, Blue for standard
-          strokeWidth: 3,
+          strokeWidth: 2, // Thinner lines to reduce noise
         },
       });
     });
