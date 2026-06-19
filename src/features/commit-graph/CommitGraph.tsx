@@ -32,7 +32,7 @@ export function CommitGraph() {
   const [edges, , onEdgesChange] = useEdgesState(initialEdges);
 
   return (
-    <div className="w-full h-full bg-slate-950 relative">
+    <div className="absolute inset-0 bg-slate-950">
       <ReactFlow
         nodes={nodes}
         edges={edges}

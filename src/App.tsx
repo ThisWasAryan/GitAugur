@@ -1,9 +1,16 @@
 import { Sidebar } from "./components/layout/Sidebar";
 import { CommitGraph } from "./features/commit-graph/CommitGraph";
 import { StagingPanel } from "./features/staging/StagingPanel";
-import { ChevronDown, ArrowUp, ArrowDown, RefreshCw, Info, CheckCircle2 } from "lucide-react";
+import { ConflictResolutionView } from "./features/conflicts/ConflictResolutionView";
+import { ChevronDown, ArrowUp, ArrowDown, RefreshCw, Info, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useRepositoryStore } from "./stores/useRepositoryStore";
 
 function App() {
+  const currentState = useRepositoryStore(state => state.currentState);
+  const toggleMergeState = useRepositoryStore(state => state.toggleMergeState);
+
+  const isMerging = currentState === 'MERGING';
+
   return (
     <div className="flex h-screen w-full bg-slate-950 text-slate-50 font-sans overflow-hidden">
       <Sidebar />
@@ -39,35 +46,54 @@ function App() {
 
           {/* Repo Health & Global Actions */}
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              Repo Healthy
-            </span>
+            <button 
+              onClick={toggleMergeState}
+              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs text-slate-300 transition-colors"
+            >
+              Toggle Demo Conflict
+            </button>
+            {isMerging ? (
+              <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400 bg-rose-950/30 px-2 py-1 rounded border border-rose-900/50">
+                <AlertTriangle className="w-4 h-4 text-rose-500" />
+                Merge Conflicts
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                Repo Healthy
+              </span>
+            )}
           </div>
         </header>
 
         <div className="flex-1 flex relative overflow-hidden">
-          {/* Main Graph Area */}
-          <div className="flex-1 relative flex flex-col">
-            <CommitGraph />
+          {/* Main Area: Either Graph or Conflict Resolver */}
+          {isMerging ? (
+            <ConflictResolutionView />
+          ) : (
+            <>
+              <div className="flex-1 relative flex flex-col">
+                <CommitGraph />
 
-            {/* Contextual Guidance Panel (Floating at bottom) */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-20 pointer-events-none">
-              <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 p-4 rounded-xl shadow-2xl flex gap-4 pointer-events-auto items-start">
-                <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg shrink-0">
-                  <Info className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold text-slate-200 mb-1">Beginner Guidance: Working Tree Clean</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    You are on the <span className="text-slate-300 font-mono">main</span> branch. You have 1 local commit that hasn't been pushed to the remote repository yet. Click "Push to origin" to share your changes with the team.
-                  </p>
+                {/* Contextual Guidance Panel (Floating at bottom) */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-20 pointer-events-none">
+                  <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 p-4 rounded-xl shadow-2xl flex gap-4 pointer-events-auto items-start">
+                    <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg shrink-0">
+                      <Info className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-200 mb-1">Beginner Guidance: Working Tree Clean</h4>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        You are on the <span className="text-slate-300 font-mono">main</span> branch. You have 1 local commit that hasn't been pushed to the remote repository yet. Click "Push to origin" to share your changes with the team.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <StagingPanel />
+              <StagingPanel />
+            </>
+          )}
         </div>
       </main>
     </div>

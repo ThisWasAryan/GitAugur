@@ -29,7 +29,7 @@ export function CommitNode({ data }: NodeProps<CommitNodeType>) {
   const textOffset = (totalLanes - lane) * 20 + 16;
 
   return (
-    <div className="flex items-center group relative h-[24px]">
+    <div className="flex items-center group relative h-[24px] min-w-[20px]">
       {/* Invisible handles for routing */}
       <Handle type="target" position={Position.Bottom} className="opacity-0" />
       <Handle type="source" position={Position.Top} className="opacity-0" />
