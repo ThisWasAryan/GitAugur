@@ -1,5 +1,6 @@
 import { Sidebar } from "./components/layout/Sidebar";
 import { CommitGraph } from "./features/commit-graph/CommitGraph";
+import { StagingPanel } from "./features/staging/StagingPanel";
 
 function App() {
   return (
@@ -14,8 +15,11 @@ function App() {
             <span className="text-sm font-medium">main</span>
           </div>
         </header>
-        <div className="flex-1 flex relative">
-          <CommitGraph />
+        <div className="flex-1 flex relative overflow-hidden">
+          <div className="flex-1 relative">
+            <CommitGraph />
+          </div>
+          <StagingPanel />
         </div>
       </main>
     </div>

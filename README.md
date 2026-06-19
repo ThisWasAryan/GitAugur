@@ -1,73 +1,47 @@
-# React + TypeScript + Vite
+# GitAugur
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+GitAugur is a modern, visual desktop Git and GitHub client built to make Git understandable and approachable while remaining powerful enough for advanced users. It focuses on visual history, predicting repository state, and explaining Git operations clearly.
 
-Currently, two official plugins are available:
+## Architecture
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+GitAugur is built using a modern, high-performance desktop stack:
+- **Tauri v2**: Core desktop framework enabling lightweight native applications.
+- **React 18 & TypeScript**: Frontend UI framework.
+- **Vite**: Ultra-fast frontend build tool.
+- **Tailwind CSS v3 & shadcn/ui**: Styling and component system.
+- **React Flow (`@xyflow/react`)**: Engine driving the central, interactive commit graph.
+- **Rust & SQLite**: Native backend for executing Git commands and storing local configurations.
 
-## React Compiler
+## Current Status (Phase 2)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+We are currently completing **Phase 2: Core Git Visualization & Repository Awareness**.
 
-## Expanding the ESLint configuration
+### Implemented Features:
+1. **Application Shell**: Complete UI shell with responsive sidebar and custom styling.
+2. **Git Service**: Foundational Rust wrapper around the local Git CLI.
+3. **Commit Graph Visualization**: 
+   - Interactive React Flow-based commit graph.
+   - Custom lane-based layout algorithm for branches.
+   - Currently operating in **Mock Data Mode** to facilitate UI development without requiring the Rust compilation toolchain in every environment.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Upcoming Features (Phase 2.5):
+- **Staging UI**: Right-hand panel for tracking modified, untracked, and deleted files.
+- **Commit Operations**: UI for writing commit messages and executing local commits.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Documentation
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+For deep dives into the project's design and architecture, check the `docs/` folder:
+- `vision.md`
+- `architecture.md`
+- `ui.md`
+- `operations.md`
+- `roadmap.md`
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Development Setup
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+*Note: Since the backend relies on Rust, you will need `rustc` and `cargo` installed to run the full application.*
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. Clone the repository.
+2. Install frontend dependencies: `npm install`
+3. Run in dev mode: `npm run tauri dev`
+4. Build for production: `npm run tauri build`
