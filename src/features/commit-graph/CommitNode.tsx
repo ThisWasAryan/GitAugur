@@ -4,12 +4,15 @@ import type { GitCommit, GitBranch, GitTag } from "../../types/git";
 import { formatDistanceToNow } from "date-fns";
 import { GitBranch as GitBranchIcon, Tag, User } from "lucide-react";
 
+import type { GraphMode } from "../../stores/useNavigationStore";
+
 export type CommitNodeData = {
   commit: GitCommit;
   branches: GitBranch[];
   tags: GitTag[];
   lane: number;
   totalLanes: number;
+  mode: GraphMode;
 };
 
 export type CommitNodeType = Node<CommitNodeData, 'commit'>;

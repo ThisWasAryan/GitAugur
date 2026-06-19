@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import {
   ReactFlow,
   Controls,
@@ -13,23 +13,27 @@ import "@xyflow/react/dist/style.css";
 import { CommitNode } from "./CommitNode";
 import { mockGitHistory } from "../../services/mockData";
 import { buildGraphLayout } from "../../utils/graphLayout";
+import { useNavigationStore } from "../../stores/useNavigationStore";
 
 const nodeTypes: NodeTypes = {
   commit: CommitNode as any,
 };
 
 export function CommitGraph() {
-  // Compute initial layout from mock data
-  const { initialNodes, initialEdges } = useMemo(() => {
-    const layout = buildGraphLayout(mockGitHistory);
-    return {
-      initialNodes: layout.nodes,
-      initialEdges: layout.edges,
-    };
-  }, []);
+  const graphMode = useNavigationStore(state => state.graphMode);
 
-  const [nodes, , onNodesChange] = useNodesState(initialNodes);
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
+  // Compute layout whenever mode changes
+  const layout = useMemo(() => {
+    return buildGraphLayout(mockGitHistory, graphMode);
+  }, [graphMode]);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(layout.nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(layout.edges);
+
+  useEffect(() => {
+    setNodes(layout.nodes);
+    setEdges(layout.edges);
+  }, [layout, setNodes, setEdges]);
 
   return (
     <div className="absolute inset-0 bg-slate-950">
