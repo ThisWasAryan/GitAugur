@@ -1,7 +1,7 @@
 import { useGitEngineStore } from "../../engine/GitEngineStore";
 import { useInspectorStore } from "../../stores/useInspectorStore";
 import { X, GitBranch, ArrowUp, ArrowDown } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 
 export function BranchInspector() {
   const { inspectedEntityId, showStaging } = useInspectorStore();
@@ -57,7 +57,7 @@ export function BranchInspector() {
             )}
           </div>
           <h3 className="text-sm text-slate-400">
-            Last updated {targetCommit ? formatDistanceToNow(new Date(targetCommit.timestamp), { addSuffix: true }) : 'Unknown'}
+            Last updated {targetCommit ? format(new Date(targetCommit.timestamp), "PPp") : 'Unknown'}
           </h3>
         </div>
 

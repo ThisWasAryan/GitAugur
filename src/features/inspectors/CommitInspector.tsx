@@ -3,7 +3,7 @@ import { useInspectorStore } from "../../stores/useInspectorStore";
 import { useRepositoryStore } from "../../stores/useRepositoryStore";
 import { invoke } from "@tauri-apps/api/core";
 import { X, GitCommit, Clock, User, GitBranch, Loader2 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { useState, useEffect } from "react";
 
 export function CommitInspector() {
@@ -106,7 +106,7 @@ export function CommitInspector() {
           </div>
           <div className="flex items-center gap-3 text-slate-300">
             <Clock className="w-4 h-4 text-slate-500" />
-            <span>{formatDistanceToNow(new Date(commit.timestamp), { addSuffix: true })}</span>
+            <span>{format(new Date(commit.timestamp), "PPp")}</span>
           </div>
           {branches.length > 0 && (
             <div className="flex items-center gap-3 text-slate-300">
