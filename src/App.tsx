@@ -33,7 +33,7 @@ import { Loader2 } from "lucide-react";
 function App() {
   const repoPath = useRepositoryStore(state => state.repoPath);
   const currentState = useRepositoryStore(state => state.currentState);
-  const { fetchRepoState, selectedFile, selectedFileDiff, selectedFileIsStaged, clearSelection, history, HEAD, stageHunk, unstageHunk } = useGitEngineStore();
+  const { fetchRepoState, selectedFile, selectedFileDiff, selectedFileIsStaged, clearSelection, history, HEAD, stageHunk, unstageHunk, isFetching } = useGitEngineStore();
   const { activeView, graphMode, setGraphMode } = useNavigationStore();
 
   const currentBranch = history.branches.find(b => b.name === HEAD);
@@ -236,7 +236,7 @@ function App() {
             </div>
           </header>
 
-          <div className="flex-1 flex relative overflow-hidden">
+          <div className="flex-1 flex relative overflow-hidden min-h-0">
             {/* Main Area: Either Conflict Resolver, or Active Navigation View */}
             {isMerging ? (
               <ConflictResolutionView />
@@ -257,7 +257,7 @@ function App() {
                 onClick={togglePanel}
                 className="flex items-center gap-1.5 hover:text-slate-300 transition-colors px-2 h-full cursor-pointer hover:bg-slate-800"
               >
-                {operations.length > 0 && operations[0]?.status === 'Running' ? (
+                {(operations.length > 0 && operations[0]?.status === 'Running') || isFetching ? (
                   <>
                     <Loader2 className="w-3 h-3 animate-spin text-blue-400" />
                     <span>Processing...</span>

@@ -43,9 +43,8 @@ export function MenuBar() {
     setRepoPath(null);
   };
 
-  // This is a basic structural MenuBar. We'll wire the backend commands later.
   return (
-    <div className="flex bg-slate-950 border-b border-slate-900 text-slate-300 text-xs px-2 select-none relative z-50 shrink-0">
+    <div className="flex h-8 bg-slate-950 border-b border-slate-900 text-slate-300 text-xs px-2 select-none relative z-50 shrink-0 items-center">
       <div 
         className="fixed inset-0 z-[-1]" 
         style={{ display: activeMenu ? 'block' : 'none' }} 

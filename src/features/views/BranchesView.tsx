@@ -7,6 +7,7 @@ import type { GitBranch as GitBranchType } from "../../types/git";
 import { useInspectorStore } from "../../stores/useInspectorStore";
 import { useContextMenu } from "../../components/ui/ContextMenu";
 import { ActionPreviewModal } from "../preview/ActionPreviewModal";
+import { CreateBranchModal } from "../preview/CreateBranchModal";
 
 export function BranchesView() {
   const { history, checkout, createBranch, fetchRepoState } = useGitEngineStore();
@@ -15,8 +16,7 @@ export function BranchesView() {
   const { inspectEntity } = useInspectorStore();
   const { showMenu } = useContextMenu();
   const [preview, setPreview] = useState<{isOpen: boolean, action: 'CHECKOUT' | 'DELETE' | null, branch: string}>({ isOpen: false, action: null, branch: "" });
-  const [isCreating, setIsCreating] = useState(false);
-  const [newBranchName, setNewBranchName] = useState("");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
   const localBranches = branches.filter(b => !b.isRemote);
   const remoteBranches = branches.filter(b => b.isRemote);
@@ -86,7 +86,7 @@ export function BranchesView() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-950 p-8 overflow-auto">
+    <div className="flex-1 flex flex-col h-full bg-slate-950 p-8 overflow-y-auto min-h-0">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-3">
@@ -96,40 +96,12 @@ export function BranchesView() {
           <p className="text-slate-400 mt-1">Manage local and remote branches.</p>
         </div>
         <div className="flex gap-2">
-          {isCreating && (
-            <input 
-              type="text" 
-              autoFocus
-              placeholder="Branch name..." 
-              value={newBranchName}
-              onChange={(e) => setNewBranchName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newBranchName.trim()) {
-                  createBranch(newBranchName.trim());
-                  setIsCreating(false);
-                  setNewBranchName("");
-                }
-                if (e.key === 'Escape') {
-                  setIsCreating(false);
-                }
-              }}
-              className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500 w-64"
-            />
-          )}
           <button 
-            onClick={() => {
-              if (isCreating && newBranchName.trim()) {
-                createBranch(newBranchName.trim());
-                setIsCreating(false);
-                setNewBranchName("");
-              } else {
-                setIsCreating(!isCreating);
-              }
-            }}
+            onClick={() => setIsCreateModalOpen(true)}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-blue-900/20"
           >
             <Plus className="w-4 h-4" />
-            {isCreating ? 'Create' : 'New Branch'}
+            New Branch
           </button>
         </div>
       </div>
@@ -164,6 +136,11 @@ export function BranchesView() {
         }}
         action={preview.action}
         branchName={preview.branch}
+      />
+      
+      <CreateBranchModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
       />
     </div>
   );

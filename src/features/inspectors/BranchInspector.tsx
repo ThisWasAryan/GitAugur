@@ -47,6 +47,14 @@ export function BranchInspector() {
                 Current
               </span>
             )}
+            {!branchData.isCurrent && (
+              <button
+                onClick={() => useGitEngineStore.getState().rebase(branchData.name)}
+                className="ml-auto px-2 py-1 bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 border border-purple-500/30 rounded text-xs transition-colors font-medium"
+              >
+                Rebase current onto this
+              </button>
+            )}
           </div>
           <h3 className="text-sm text-slate-400">
             Last updated {targetCommit ? formatDistanceToNow(new Date(targetCommit.timestamp), { addSuffix: true }) : 'Unknown'}

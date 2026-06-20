@@ -22,10 +22,8 @@ export function buildGraphLayout(history: GitHistory, preview?: PreviewState): {
     commitsToLayout.push(preview.ghostCommit);
   }
 
-  // Sort commits newest first
-  const sortedCommits = commitsToLayout.sort((a, b) => 
-    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
+  // Use commits directly since backend uses --topo-order to guarantee correct lineage traversal
+  const sortedCommits = commitsToLayout;
 
   const laneMap = new Map<string, number>();
   const branchMap = new Map<string, string>();

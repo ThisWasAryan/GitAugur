@@ -86,6 +86,14 @@ export function CommitInspector() {
             <span className="font-mono text-xs bg-slate-950 px-2 py-1 rounded text-slate-400 border border-slate-800">
               {commit.hash.substring(0, 7)}
             </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => useGitEngineStore.getState().cherryPick(commit.hash)}
+                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded transition-colors font-medium border border-slate-700 hover:border-slate-600"
+              >
+                Cherry-Pick
+              </button>
+            </div>
           </div>
           <h3 className="text-lg font-bold text-slate-100">{commit.message}</h3>
         </div>

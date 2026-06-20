@@ -144,6 +144,36 @@ pub fn git_merge(app: AppHandle, repo_path: String, branch: String) -> Result<Gi
 }
 
 #[tauri::command]
+pub fn git_checkout_all_remotes(app: AppHandle, repo_path: String) -> Result<GitResult, String> {
+    // 1. Fetch to be sure
+    let _ = execute_git_command(&repo_path, &["fetch", "--all"]);
+    
+    // 2. Get all remote branches
+    let output = execute_git_command(&repo_path, &["branch", "-r"])?;
+    
+    // 3. Track each one locally
+    for line in output.lines() {
+        let branch = line.trim();
+        if branch.contains("->") || branch.is_empty() {
+            continue; // Skip HEAD aliases
+        }
+        
+        let parts: Vec<&str> = branch.splitn(2, '/').collect();
+        if parts.len() == 2 {
+            let local_name = parts[1];
+            // Ignore errors here if branch already exists
+            let _ = execute_git_command(&repo_path, &["branch", "--track", local_name, branch]);
+        }
+    }
+    
+    Ok(GitResult {
+        success: true,
+        stdout: "All remotes checked out locally".to_string(),
+        stderr: "".to_string(),
+    })
+}
+
+#[tauri::command]
 pub fn git_diff(app: AppHandle, repo_path: String, file: String, cached: bool) -> Result<GitResult, String> {
     let mut args = vec!["diff"];
     if cached {
@@ -184,7 +214,7 @@ pub fn git_branch(app: AppHandle, repo_path: String, branch_name: String) -> Res
 }
 
 #[tauri::command]
-pub fn git_switch(app: AppHandle, repo_path: String, branch_name: String, create: bool) -> Result<GitResult, String> {
+pub fn git_switch(app: AppHandle, repo_path: String, branch_name: String, create: bool, base_branch: Option<String>) -> Result<GitResult, String> {
     if branch_name.starts_with("-") {
         return Err("Invalid branch name".to_string());
     }
@@ -193,6 +223,13 @@ pub fn git_switch(app: AppHandle, repo_path: String, branch_name: String, create
         args.push("-c");
     }
     args.push(&branch_name);
+    
+    // Convert String to &str before passing to args.push
+    let base_ref = base_branch.as_deref();
+    if let Some(base) = base_ref {
+        args.push(base);
+    }
+    
     execute_and_emit(&app, &repo_path, "Switch Branch", &args)
 }
 

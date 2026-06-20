@@ -27,3 +27,4 @@ dist-ssr
 docs/
 test-dialog.mjs
 src/mockTauriBackend.js
+docs/

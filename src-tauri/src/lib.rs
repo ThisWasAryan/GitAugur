@@ -18,6 +18,7 @@ pub fn run() {
             commands::git_commit,
             commands::git_reset,
             commands::git_checkout,
+            commands::git_checkout_all_remotes,
             commands::git_merge,
             commands::git_diff,
             commands::git_init,

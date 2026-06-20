@@ -59,15 +59,22 @@ export function LaunchScreen() {
     }
   };
 
+  const [cloneStatus, setCloneStatus] = useState("");
+
   const handleCloneRepository = async () => {
     if (!cloneUrl || !cloneDestPath) return;
     try {
       setIsCloning(true);
+      setCloneStatus("Downloading objects...");
       // Yield to React to paint the loading UI before synchronous backend blocks
       await new Promise(resolve => setTimeout(resolve, 50));
       
       const normalizedUrl = normalizeGitUrl(cloneUrl);
       await invoke('git_clone', { url: normalizedUrl, path: cloneDestPath });
+      
+      setCloneStatus("Checking out branches...");
+      await new Promise(resolve => setTimeout(resolve, 50));
+      await invoke('git_checkout_all_remotes', { repoPath: cloneDestPath });
       
       setIsCloning(false);
       setShowCloneModal(false);
@@ -190,11 +197,11 @@ export function LaunchScreen() {
             {isCloning && (
               <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center z-10">
                 <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
-                <h3 className="text-xl font-bold text-white mb-2">Cloning Repository</h3>
+                <h3 className="text-xl font-bold text-white mb-2">{cloneStatus || "Cloning Repository"}</h3>
                 <p className="text-slate-400 text-sm">This may take a while depending on the repository size...</p>
                 <div className="w-48 h-1.5 bg-slate-800 rounded-full mt-6 overflow-hidden relative">
-                  <div className="absolute inset-y-0 left-0 bg-blue-500 w-1/2 rounded-full animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite] opacity-75"></div>
-                  <div className="absolute inset-y-0 left-0 bg-blue-500 w-1/3 rounded-full animate-pulse"></div>
+                  <div className="absolute inset-0 bg-blue-500 rounded-full animate-[pulse_1s_cubic-bezier(0.4,0,0.6,1)_infinite]"></div>
+                  <div className="absolute inset-y-0 left-0 bg-blue-400 w-1/3 rounded-full animate-[bounce_1.5s_infinite]"></div>
                 </div>
               </div>
             )}

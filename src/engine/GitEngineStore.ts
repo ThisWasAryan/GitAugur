@@ -33,6 +33,7 @@ export interface Stash {
 
 interface GitEngineState {
   history: GitHistory;
+  isFetching: boolean;
   HEAD: string; // The branch name or commit hash we are currently on
   
   // Working Directory
@@ -63,9 +64,10 @@ interface GitEngineState {
   commit: (message: string) => void;
   
   checkout: (ref: string) => void;
-  createBranch: (name: string) => void;
+  createBranch: (name: string, baseBranch?: string) => void;
   previewMerge: (sourceBranch: string, targetBranch: string) => Promise<void>;
   rebase: (targetBranch: string) => Promise<void>;
+  cherryPick: (commitHash: string) => Promise<void>;
   merge: (sourceBranch: string) => Promise<void>;
   undo: () => Promise<void>;
   fetchReflog: () => Promise<any[]>;
@@ -80,8 +82,13 @@ interface GitEngineState {
 }
 
 export const useGitEngineStore = create<GitEngineState>((set, get) => ({
-  history: { commits: [], branches: [], tags: [] },
-  HEAD: '',
+  history: {
+    commits: [],
+    branches: [],
+    tags: []
+  },
+  isFetching: false,
+  HEAD: 'HEAD',
   unstagedFiles: [],
   stagedFiles: [],
   stashes: [],
@@ -350,11 +357,11 @@ export const useGitEngineStore = create<GitEngineState>((set, get) => ({
     });
   },
 
-  createBranch: async (name) => {
+  createBranch: async (name, baseBranch) => {
     const repoPath = useRepositoryStore.getState().repoPath;
     if (repoPath) {
       try {
-        await invoke('git_switch', { repoPath, branchName: name, create: true });
+        await invoke('git_switch', { repoPath, branchName: name, create: true, baseBranch: baseBranch || null });
         get().fetchRepoState(repoPath);
       } catch (err) {
         toast.error(`Failed to create branch: ${err}`);
@@ -407,6 +414,19 @@ export const useGitEngineStore = create<GitEngineState>((set, get) => ({
         }
       }
     });
+  },
+
+  cherryPick: async (commitHash: string) => {
+    const repoPath = useRepositoryStore.getState().repoPath;
+    if (!repoPath) return;
+    try {
+      await invoke('git_cherry_pick', { repoPath, commitHash });
+      toast.success(`Successfully cherry-picked ${commitHash.substring(0, 7)}`);
+      get().fetchRepoState(repoPath);
+    } catch (err: any) {
+      toast.error(`Cherry-pick failed: ${err}`);
+      // Usually need to abort if failed
+    }
   },
 
   rebase: async (targetBranch: string) => {

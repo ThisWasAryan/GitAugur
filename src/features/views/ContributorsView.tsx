@@ -22,7 +22,7 @@ export function ContributorsView() {
   const sortedAuthors = Array.from(authorStats.values()).sort((a, b) => b.commits - a.commits);
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-950 p-8 overflow-auto">
+    <div className="flex-1 flex flex-col h-full bg-slate-950 p-8 overflow-y-auto min-h-0">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-3">
           <Users className="w-8 h-8 text-emerald-500" />

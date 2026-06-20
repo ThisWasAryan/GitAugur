@@ -30,12 +30,20 @@ function stringHash(str: string): number {
   return Math.abs(hash);
 }
 
+import { useSettingsStore } from '../stores/useSettingsStore';
+
 /**
  * Returns a stable color set for a specific branch name.
  */
 export function colorForBranch(branchName: string) {
   if (!branchName) return branchColorPalette[0];
   
+  // Check user-defined custom colors first
+  const customColors = useSettingsStore.getState().customBranchColors || {};
+  if (customColors[branchName] !== undefined && customColors[branchName] >= 0 && customColors[branchName] < branchColorPalette.length) {
+    return branchColorPalette[customColors[branchName]];
+  }
+
   // Special handling for common main branches to ensure they get consistent known colors
   const normalized = branchName.toLowerCase().replace('origin/', '');
   
