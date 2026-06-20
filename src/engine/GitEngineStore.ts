@@ -424,7 +424,13 @@ export const useGitEngineStore = create<GitEngineState>((set, get) => ({
       if (result.success) {
         toast.success(`Successfully cherry-picked ${commitHash.substring(0, 7)}`);
       } else {
-        toast.error(`Cherry-pick failed: ${result.stderr || result.stdout}`);
+        const stderr = result.stderr || result.stdout || '';
+        if (stderr.includes('previous cherry-pick is now empty') || stderr.includes('allow-empty')) {
+          await invoke('git_exec', { repoPath, args: ['cherry-pick', '--skip'] });
+          toast.success(`Skipped empty cherry-pick (changes already present)`);
+        } else {
+          toast.error(`Cherry-pick failed: ${stderr}`);
+        }
       }
       get().fetchRepoState(repoPath);
     } catch (err: any) {
@@ -453,9 +459,9 @@ export const useGitEngineStore = create<GitEngineState>((set, get) => ({
     const repoPath = useRepositoryStore.getState().repoPath;
     if (repoPath) {
       try {
-        const result: any = await invoke('git_exec', { repoPath, args: ['merge', sourceBranch] });
+        const result: any = await invoke('git_exec', { repoPath, args: ['merge', '--no-ff', '--no-commit', sourceBranch] });
         if (result.success) {
-          toast.success(`Successfully merged ${sourceBranch}`);
+          toast.success(`Merge prepared for ${sourceBranch}. Please finalize and add your commit message.`);
         } else {
           toast.error(`Failed to merge: ${result.stderr || result.stdout}`);
         }

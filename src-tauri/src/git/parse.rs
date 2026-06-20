@@ -7,7 +7,7 @@ pub fn parse_history(repo_path: &str) -> Result<GitHistoryData, String> {
     // Format: Hash, ParentHashes, AuthorName, AuthorEmail, IsoDate, Subject
     let log_result = execute_git_command(
         repo_path,
-        &["log", "--branches", "--tags", "--remotes", "HEAD", "--pretty=format:%H%x00%P%x00%an%x00%ae%x00%aI%x00%s", "-n", "1000"]
+        &["log", "--topo-order", "--branches", "--tags", "--remotes", "HEAD", "--pretty=format:%H%x00%P%x00%an%x00%ae%x00%aI%x00%s", "-n", "1000"]
     )?;
 
     let mut commits = Vec::new();
