@@ -236,7 +236,7 @@ function App() {
             </div>
           </header>
 
-          <div className="flex-1 flex relative overflow-hidden min-h-0">
+          <div className="flex-1 relative overflow-hidden min-h-0">
             {/* Main Area: Either Conflict Resolver, or Active Navigation View */}
             {isMerging ? (
               <ConflictResolutionView />

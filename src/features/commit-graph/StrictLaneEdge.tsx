@@ -31,16 +31,15 @@ export function StrictLaneEdge({
     // Same lane, straight line
     path = `M ${sourceX},${sourceY} L ${targetX},${targetY}`;
   } else {
-    // Different lanes. Stay in source lane vertically.
-    // Go down to targetY - curveOffset.
-    const startCurveY = targetY - curveOffset;
+    // Different lanes. Curve immediately below the source into the target lane,
+    // then go straight down.
+    const startCurveY = sourceY + curveOffset;
     
-    // Draw straight line down
-    path = `M ${sourceX},${sourceY} L ${sourceX},${startCurveY}`;
+    // Draw straight line down slightly, then curve to targetX
+    path = `M ${sourceX},${sourceY} L ${sourceX},${startCurveY - curveOffset/2} Q ${sourceX},${startCurveY} ${(sourceX+targetX)/2},${startCurveY} T ${targetX},${startCurveY + curveOffset/2}`;
     
-    // Curve into target
-    // Quadratic bezier: Q controlPointX controlPointY, endPointX endPointY
-    path += ` Q ${sourceX},${targetY} ${targetX},${targetY}`;
+    // Then straight down to target
+    path += ` L ${targetX},${targetY}`;
   }
 
   return (

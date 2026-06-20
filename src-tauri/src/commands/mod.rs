@@ -1,8 +1,7 @@
 use crate::git::{execute_git_command, GitResult};
 use crate::git::models::GitHistoryData;
 use crate::git::parse::parse_history;
-use crate::storage::AppState;
-use tauri::{State, AppHandle, Emitter};
+use tauri::{AppHandle, Emitter};
 use std::process::Command;
 use std::time::Instant;
 use serde::Serialize;
@@ -68,12 +67,12 @@ pub fn git_log(app: AppHandle, repo_path: String, max_count: Option<u32>) -> Res
 }
 
 #[tauri::command]
-pub fn get_repo_state(repo_path: String) -> Result<GitHistoryData, String> {
+pub async fn get_repo_state(repo_path: String) -> Result<GitHistoryData, String> {
     parse_history(&repo_path)
 }
 
 #[tauri::command]
-pub fn git_clone(app: AppHandle, url: String, path: String) -> Result<GitResult, String> {
+pub async fn git_clone(app: AppHandle, url: String, path: String) -> Result<GitResult, String> {
     let start = Instant::now();
     let output = Command::new("git")
         .args(&["clone", &url, &path])
@@ -144,7 +143,7 @@ pub fn git_merge(app: AppHandle, repo_path: String, branch: String) -> Result<Gi
 }
 
 #[tauri::command]
-pub fn git_checkout_all_remotes(app: AppHandle, repo_path: String) -> Result<GitResult, String> {
+pub async fn git_checkout_all_remotes(_app: AppHandle, repo_path: String) -> Result<GitResult, String> {
     // 1. Fetch to be sure
     let _ = execute_git_command(&repo_path, &["fetch", "--all"]);
     
@@ -152,7 +151,7 @@ pub fn git_checkout_all_remotes(app: AppHandle, repo_path: String) -> Result<Git
     let output = execute_git_command(&repo_path, &["branch", "-r"])?;
     
     // 3. Track each one locally
-    for line in output.lines() {
+    for line in output.stdout.lines() {
         let branch = line.trim();
         if branch.contains("->") || branch.is_empty() {
             continue; // Skip HEAD aliases
@@ -170,6 +169,7 @@ pub fn git_checkout_all_remotes(app: AppHandle, repo_path: String) -> Result<Git
         success: true,
         stdout: "All remotes checked out locally".to_string(),
         stderr: "".to_string(),
+        exit_code: 0,
     })
 }
 
@@ -363,7 +363,7 @@ pub fn git_commit_details(app: AppHandle, repo_path: String, commit_hash: String
 }
 
 #[tauri::command]
-pub fn git_exec(app: AppHandle, repo_path: String, args: Vec<String>) -> Result<GitResult, String> {
+pub async fn git_exec(app: AppHandle, repo_path: String, args: Vec<String>) -> Result<GitResult, String> {
     let allowed_subcommands = [
         "show", "diff", "stash", "log", "status", "branch", "checkout", "commit", 
         "add", "reset", "revert", "cherry-pick", "rebase", "merge", "fetch", "pull", "push", "tag", "clean", "rm", "mv"
@@ -424,13 +424,13 @@ pub fn git_show_file(app: AppHandle, repo_path: String, file_path: String) -> Re
 }
 
 #[tauri::command]
-pub fn read_file_content(app: AppHandle, repo_path: String, file_path: String) -> Result<String, String> {
+pub fn read_file_content(_app: AppHandle, repo_path: String, file_path: String) -> Result<String, String> {
     let full_path = std::path::Path::new(&repo_path).join(&file_path);
     std::fs::read_to_string(full_path).map_err(|e| format!("Failed to read file: {}", e))
 }
 
 #[tauri::command]
-pub fn write_file_content(app: AppHandle, repo_path: String, file_path: String, content: String) -> Result<String, String> {
+pub fn write_file_content(_app: AppHandle, repo_path: String, file_path: String, content: String) -> Result<String, String> {
     let full_path = std::path::Path::new(&repo_path).join(&file_path);
     std::fs::write(full_path, content).map_err(|e| format!("Failed to write file: {}", e))?;
     Ok("Success".to_string())
@@ -531,7 +531,7 @@ pub fn git_rebase_interactive(app: AppHandle, repo_path: String, branch: String,
     if branch.starts_with("-") {
         return Err("Invalid branch name".to_string());
     }
-    use std::io::Write;
+    // use std::io::Write;
     let start = Instant::now();
     
     let mut temp_script = std::env::temp_dir();
@@ -551,7 +551,8 @@ pub fn git_rebase_interactive(app: AppHandle, repo_path: String, branch: String,
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mut perms = std::fs::metadata(&temp_script).map_err(|e| e.to_string())?.permissions();
+        let perms = std::fs::metadata(&temp_script).map_err(|e| e.to_string())?.permissions();
+        let mut perms = perms;
         perms.set_mode(0o755);
         std::fs::set_permissions(&temp_script, perms).map_err(|e| e.to_string())?;
     }

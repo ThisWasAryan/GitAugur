@@ -7,7 +7,7 @@ pub fn parse_history(repo_path: &str) -> Result<GitHistoryData, String> {
     // Format: Hash, ParentHashes, AuthorName, AuthorEmail, IsoDate, Subject
     let log_result = execute_git_command(
         repo_path,
-        &["log", "--topo-order", "--branches", "--tags", "--remotes", "HEAD", "--pretty=format:%H%x00%P%x00%an%x00%ae%x00%aI%x00%s", "-n", "1000"]
+        &["log", "--branches", "--tags", "--remotes", "HEAD", "--pretty=format:%H%x00%P%x00%an%x00%ae%x00%aI%x00%s", "-n", "1000"]
     )?;
 
     let mut commits = Vec::new();
@@ -112,7 +112,7 @@ pub fn parse_history(repo_path: &str) -> Result<GitHistoryData, String> {
     // 3. Fetch Status
     let mut staged_files = Vec::new();
     let mut unstaged_files = Vec::new();
-    let status_result = execute_git_command(repo_path, &["status", "--porcelain"])?;
+    let status_result = execute_git_command(repo_path, &["-c", "core.quotePath=false", "status", "--porcelain"])?;
 
     if status_result.success && !status_result.stdout.trim().is_empty() {
         for line in status_result.stdout.lines() {

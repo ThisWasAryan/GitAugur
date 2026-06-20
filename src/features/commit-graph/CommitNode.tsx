@@ -66,8 +66,8 @@ export function CommitNode({ data }: NodeProps<CommitNodeType>) {
             { label: 'View Details', onClick: () => inspectEntity('commit', commit.hash) },
             { label: 'Copy Commit Hash', onClick: () => navigator.clipboard.writeText(commit.hash) },
             { divider: true, onClick: () => {} },
-            { label: 'Cherry Pick', onClick: () => console.log('Cherry pick', commit.hash) },
-            { label: 'Interactive Rebase from Here', onClick: () => console.log('Rebase', commit.hash) }
+            { label: 'Cherry Pick', onClick: () => useGitEngineStore.getState().cherryPick(commit.hash) },
+            { label: 'Interactive Rebase from Here', onClick: () => useGitEngineStore.getState().rebase(commit.hash + '^') }
           ]);
         }}
       >
