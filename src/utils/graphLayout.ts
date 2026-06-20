@@ -22,8 +22,10 @@ export function buildGraphLayout(history: GitHistory, preview?: PreviewState): {
     commitsToLayout.push(preview.ghostCommit);
   }
 
-  // Use commits directly since backend uses --topo-order to guarantee correct lineage traversal
-  const sortedCommits = commitsToLayout;
+  // Sort commits newest first
+  const sortedCommits = commitsToLayout.sort((a, b) => 
+    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
 
   const laneMap = new Map<string, number>();
   const branchMap = new Map<string, string>();
@@ -31,7 +33,24 @@ export function buildGraphLayout(history: GitHistory, preview?: PreviewState): {
   let nextLane = 0;
 
   // Pre-seed branchMap with branch tips, prioritizing local and main branches
-  const sortedBranches = [...history.branches].sort((a, b) => {
+  const branchesToLayout = history.branches.map(b => {
+    if (preview?.active && preview.ghostCommit && preview.targetBranch === b.name) {
+      return { ...b, commitHash: preview.ghostCommit.hash };
+    }
+    return b;
+  });
+
+  // If the target branch didn't exist (e.g. creating a new branch), add it
+  if (preview?.active && preview.ghostCommit && preview.targetBranch && !branchesToLayout.some(b => b.name === preview.targetBranch)) {
+    branchesToLayout.push({
+      name: preview.targetBranch,
+      commitHash: preview.ghostCommit.hash,
+      isRemote: false,
+      upstream: undefined
+    });
+  }
+
+  const sortedBranches = branchesToLayout.sort((a, b) => {
     if (a.name === 'main' || a.name === 'master') return -1;
     if (b.name === 'main' || b.name === 'master') return 1;
     if (a.isRemote && !b.isRemote) return 1;
@@ -56,28 +75,12 @@ export function buildGraphLayout(history: GitHistory, preview?: PreviewState): {
     branchMap.set(preview.ghostCommit.hash, preview.targetBranch);
   }
 
+  // Phase 1: Parse merge messages and propagate branch names downward
   sortedCommits.forEach(commit => {
-    // If this commit doesn't have a lane yet, assign it the next available lane
-    if (!laneMap.has(commit.hash)) {
-      laneMap.set(commit.hash, nextLane++);
-    }
-    const currentLane = laneMap.get(commit.hash)!;
     const currentBranch = branchMap.get(commit.hash) || '';
-
-    if (!laneBranchMap.has(currentLane)) {
-       if (currentBranch) {
-          laneBranchMap.set(currentLane, currentBranch);
-       } else {
-          laneBranchMap.set(currentLane, `__lane_${currentLane}`);
-       }
-    }
-
-    // Pass this lane and branch to the first parent
+    
     if (commit.parentHashes.length > 0) {
       const firstParent = commit.parentHashes[0];
-      if (!laneMap.has(firstParent)) {
-        laneMap.set(firstParent, currentLane);
-      }
       if (currentBranch) {
         const existingBranch = branchMap.get(firstParent);
         if (!existingBranch || getBranchPriority(currentBranch) > getBranchPriority(existingBranch)) {
@@ -85,7 +88,6 @@ export function buildGraphLayout(history: GitHistory, preview?: PreviewState): {
         }
       }
 
-      // Pass branch name to other parents (merged branches) to color them correctly
       if (commit.parentHashes.length > 1) {
         let mergedBranch = '';
         const msg = commit.message;
@@ -112,6 +114,70 @@ export function buildGraphLayout(history: GitHistory, preview?: PreviewState): {
             }
           }
         }
+      }
+    }
+  });
+
+  const commitByHash = new Map<string, typeof sortedCommits[0]>();
+  sortedCommits.forEach(c => commitByHash.set(c.hash, c));
+
+  // Phase 2: Trace branches to reserve lanes (highest priority first)
+  sortedBranches.forEach(b => {
+    let cleanName = b.name;
+    if (b.isRemote && cleanName.startsWith('origin/')) {
+      cleanName = cleanName.replace('origin/', '');
+    }
+
+    let currentHash: string | undefined = b.commitHash;
+    let assignedLane = false;
+    let branchLane = -1;
+
+    while (currentHash) {
+      if (!laneMap.has(currentHash)) {
+         if (!assignedLane) {
+            branchLane = nextLane++;
+            laneBranchMap.set(branchLane, cleanName);
+            assignedLane = true;
+         }
+         laneMap.set(currentHash, branchLane);
+         
+         const c = commitByHash.get(currentHash);
+         if (c && c.parentHashes.length > 0) {
+            currentHash = c.parentHashes[0]; // Follow first parent
+         } else {
+            currentHash = undefined;
+         }
+      } else {
+         // Already assigned to a lane (e.g. merged into a higher-priority branch)
+         currentHash = undefined;
+      }
+    }
+  });
+
+  // Phase 3: Fallback first-parent traversal for unassigned commits (detached heads, deleted branches)
+  sortedCommits.forEach(commit => {
+    let currentHash: string | undefined = commit.hash;
+    let assignedLane = false;
+    let branchLane = -1;
+
+    while (currentHash) {
+      if (!laneMap.has(currentHash)) {
+         if (!assignedLane) {
+            branchLane = nextLane++;
+            const fallbackBranch = branchMap.get(currentHash) || `__lane_${branchLane}`;
+            laneBranchMap.set(branchLane, fallbackBranch);
+            assignedLane = true;
+         }
+         laneMap.set(currentHash, branchLane);
+         
+         const c = commitByHash.get(currentHash);
+         if (c && c.parentHashes.length > 0) {
+            currentHash = c.parentHashes[0];
+         } else {
+            currentHash = undefined;
+         }
+      } else {
+         currentHash = undefined;
       }
     }
   });

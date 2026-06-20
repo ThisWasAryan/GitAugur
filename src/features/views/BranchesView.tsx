@@ -10,7 +10,7 @@ import { ActionPreviewModal } from "../preview/ActionPreviewModal";
 import { CreateBranchModal } from "../preview/CreateBranchModal";
 
 export function BranchesView() {
-  const { history, checkout, createBranch, fetchRepoState } = useGitEngineStore();
+  const { history, checkout, fetchRepoState } = useGitEngineStore();
   const repoPath = useRepositoryStore(state => state.repoPath);
   const branches = history.branches;
   const { inspectEntity } = useInspectorStore();

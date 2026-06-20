@@ -8,6 +8,7 @@ import { GitBranch as GitBranchIcon, Tag, User } from "lucide-react";
 import type { GraphMode } from "../../stores/useNavigationStore";
 import { useInspectorStore } from "../../stores/useInspectorStore";
 import { useContextMenu } from "../../components/ui/ContextMenu";
+import { useGitEngineStore } from "../../engine/GitEngineStore";
 import { colorForBranch, GHOST_COLOR } from "../../utils/branchColors";
 
 export type CommitNodeData = {
