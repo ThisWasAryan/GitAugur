@@ -1,8 +1,14 @@
 # GitAugur
 
-**GitAugur** is a next-generation graphical user interface (GUI) for Git. Built with React, TailwindCSS, Tauri, and Rust, it is designed to visualize Git history in an intuitive, predictive, and beautifully rendered topological graph. 
+> **Note**: This is an experimental project and heavily under development. Some features might be broken or incomplete. Use at your own risk.
+
+**GitAugur** is a next-generation, experimental, and work-in-progress graphical user interface (GUI) for Git. Built with React, TailwindCSS, Tauri, and Rust, it is designed to visualize Git history in an intuitive, predictive, and beautifully rendered topological graph. 
 
 GitAugur transforms abstract Git commands into a tactile, visual experience—empowering both beginners and advanced users to confidently navigate complex workflows.
+
+<img width="1918" height="1041" alt="GitAugerV1HERO1" src="https://github.com/user-attachments/assets/606c5b3f-b532-4e0b-a291-500a921ffa8a" />
+<img width="1917" height="1039" alt="GitAugerHERO2" src="https://github.com/user-attachments/assets/51f2cdca-06d2-477e-a805-5430d507693f" />
+<img width="1915" height="1037" alt="GitAugerHERO3" src="https://github.com/user-attachments/assets/02705214-86b2-4bbb-acc7-f9ef59242c8a" />
 
 ---
 
