@@ -24,6 +24,7 @@ export function ConflictResolutionView() {
   const [conflictBlocks, setConflictBlocks] = useState<ConflictBlock[]>([]);
   const [rawLines, setRawLines] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [commitMessage, setCommitMessage] = useState("");
 
   const conflictedFiles = unstagedFiles.filter(f => f.status === 'conflicted');
 
@@ -179,7 +180,11 @@ export function ConflictResolutionView() {
           await invoke('git_exec', { repoPath, args: ['rebase', '--continue'] });
         } else {
           // For MERGING and CHERRY_PICKING
-          await invoke('git_exec', { repoPath, args: ['commit', '--no-edit'] });
+          if (commitMessage.trim().length > 0) {
+            await invoke('git_exec', { repoPath, args: ['commit', '-m', commitMessage.trim()] });
+          } else {
+            await invoke('git_exec', { repoPath, args: ['commit', '--no-edit'] });
+          }
         }
         await fetchRepoState(repoPath);
       } catch (e) {
@@ -228,11 +233,23 @@ export function ConflictResolutionView() {
     };
 
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-slate-950 text-slate-400 p-8 text-center">
+      <div className="flex-1 flex flex-col items-center justify-center bg-slate-950 text-slate-400 p-8 text-center overflow-y-auto custom-scrollbar">
         <Check className="w-16 h-16 text-emerald-500 mb-4" />
         <h2 className="text-2xl font-bold text-slate-200 mb-2">No Conflicts Remaining</h2>
-        <p className="mb-8 max-w-md">All conflicts have been resolved or the operation is paused. You can now finalize the operation or skip this commit.</p>
+        <p className="mb-6 max-w-md">All conflicts have been resolved or the operation is paused. You can now finalize the operation or skip this commit.</p>
         
+        {currentState !== 'REBASING' && (
+          <div className="w-full max-w-md mb-8 text-left">
+            <label className="block text-sm font-medium text-slate-300 mb-2">Commit Message (Optional)</label>
+            <textarea 
+              value={commitMessage}
+              onChange={(e) => setCommitMessage(e.target.value)}
+              placeholder="Leave blank to use the default generated message"
+              className="w-full h-24 bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-200 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all custom-scrollbar resize-none"
+            />
+          </div>
+        )}
+
         <div className="flex items-center gap-4">
           <button 
             onClick={handleFinalize}
@@ -307,7 +324,7 @@ export function ConflictResolutionView() {
                     <div>
                       <h3 className="font-semibold text-emerald-400 flex items-center gap-2">
                         <GitBranch className="w-4 h-4" />
-                        Current Change <span className="font-mono bg-emerald-900/50 px-1.5 rounded text-xs">{block.currentBranch || 'HEAD'}</span>
+                        Current Changes <span className="font-mono bg-emerald-900/50 px-1.5 rounded text-xs font-normal text-emerald-200">(Your Branch)</span>
                       </h3>
                     </div>
                     <button 
@@ -341,7 +358,7 @@ export function ConflictResolutionView() {
                     <div>
                       <h3 className="font-semibold text-blue-400 flex items-center gap-2">
                         <GitBranch className="w-4 h-4" />
-                        Incoming Change <span className="font-mono bg-blue-900/50 px-1.5 rounded text-xs">{block.incomingBranch}</span>
+                        Incoming Changes <span className="font-mono bg-blue-900/50 px-1.5 rounded text-xs font-normal text-blue-200">(From {useRepositoryStore.getState().currentState.toLowerCase()})</span>
                       </h3>
                     </div>
                     <button 
