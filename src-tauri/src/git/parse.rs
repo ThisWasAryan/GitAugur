@@ -118,7 +118,10 @@ pub fn parse_history(repo_path: &str) -> Result<GitHistoryData, String> {
         for line in status_result.stdout.lines() {
             if line.len() > 3 {
                 let status_chars: Vec<char> = line.chars().take(2).collect();
-                let path = line[3..].to_string();
+                let mut path = line[3..].to_string();
+                if path.starts_with('"') && path.ends_with('"') {
+                    path = path[1..path.len()-1].to_string();
+                }
 
                 let staged_char = status_chars[0];
                 let unstaged_char = status_chars[1];
