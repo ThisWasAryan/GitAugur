@@ -86,7 +86,7 @@ export function BranchesView() {
   };
 
   return (
-    <div className="h-full bg-slate-950 p-8 overflow-y-auto">
+    <div className="flex-1 h-full bg-slate-950 p-8 overflow-y-auto min-h-0">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-3">
