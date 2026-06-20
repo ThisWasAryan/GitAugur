@@ -1,4 +1,5 @@
 import { useGitEngineStore } from "../../engine/GitEngineStore";
+import { useTerminology } from "../../hooks/useTerminology";
 import { FileStatusList } from "./FileStatusList";
 import { CommitForm } from "./CommitForm";
 
@@ -9,8 +10,12 @@ export function StagingPanel() {
     stageFile, 
     unstageFile, 
     stageAll, 
-    unstageAll 
+    unstageAll,
+    selectFile,
+    selectedFile
   } = useGitEngineStore();
+
+  const { t } = useTerminology();
 
   return (
     <div className="w-80 h-full bg-slate-900 border-l border-slate-800 flex flex-col shrink-0">
@@ -23,18 +28,22 @@ export function StagingPanel() {
 
       <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
         <FileStatusList 
-          title="Staged Changes"
+          title={t('Index')}
           files={stagedFiles}
           onAction={unstageFile}
           onActionAll={unstageAll}
+          onSelect={selectFile}
+          selectedFile={selectedFile || undefined}
           actionIcon="minus"
         />
 
         <FileStatusList 
-          title="Changes"
+          title={t('Working Tree')}
           files={unstagedFiles}
           onAction={stageFile}
           onActionAll={stageAll}
+          onSelect={selectFile}
+          selectedFile={selectedFile || undefined}
           actionIcon="plus"
         />
       </div>

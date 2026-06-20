@@ -1,3 +1,6 @@
+pub mod models;
+pub mod parse;
+
 use std::process::Command;
 use serde::{Deserialize, Serialize};
 

@@ -6,10 +6,12 @@ interface FileStatusListProps {
   files: FileStatus[];
   onAction: (path: string) => void;
   onActionAll: () => void;
+  onSelect?: (path: string) => void;
+  selectedFile?: string;
   actionIcon: "plus" | "minus";
 }
 
-export function FileStatusList({ title, files, onAction, onActionAll, actionIcon }: FileStatusListProps) {
+export function FileStatusList({ title, files, onAction, onActionAll, onSelect, selectedFile, actionIcon }: FileStatusListProps) {
   const getIcon = (status: string) => {
     switch (status) {
       case 'added': return <FilePlus className="w-4 h-4 text-emerald-500" />;
@@ -48,12 +50,16 @@ export function FileStatusList({ title, files, onAction, onActionAll, actionIcon
         <div className="text-sm text-slate-600 italic py-2">No files</div>
       ) : (
         <ul className="space-y-0.5">
-          {files.map((file) => (
-            <li 
-              key={file.path} 
-              className="flex items-center justify-between group px-2 py-1.5 hover:bg-slate-800/50 rounded-md transition-colors"
-            >
-              <div className="flex items-center gap-2 overflow-hidden">
+          {files.map((file) => {
+            const isSelected = selectedFile === file.path;
+            return (
+              <li 
+                key={file.path} 
+                onClick={() => onSelect?.(file.path)}
+                className={`flex items-center justify-between group px-2 py-1.5 rounded-md transition-colors cursor-pointer
+                  ${isSelected ? 'bg-blue-900/30 border border-blue-800/50' : 'hover:bg-slate-800/50 border border-transparent'}`}
+              >
+                <div className="flex items-center gap-2 overflow-hidden">
                 {getIcon(file.status)}
                 <span className="text-sm text-slate-300 truncate" title={file.path}>
                   {file.path}
@@ -68,14 +74,19 @@ export function FileStatusList({ title, files, onAction, onActionAll, actionIcon
               </div>
               
               <button 
-                onClick={() => onAction(file.path)}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-slate-200 transition-all"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAction(file.path);
+                }}
+                className={`p-1 rounded transition-all 
+                  ${isSelected ? 'opacity-100 text-slate-300 hover:text-white hover:bg-slate-700' : 'opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}
                 title={actionIcon === 'plus' ? 'Stage file' : 'Unstage file'}
               >
                 {actionIcon === 'plus' ? <Plus className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
               </button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>

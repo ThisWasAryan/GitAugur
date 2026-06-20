@@ -22,25 +22,52 @@ export function buildGraphLayout(history: GitHistory, preview?: PreviewState): {
 
   const laneMap = new Map<string, number>();
   
-  // Find the 'main' branch tip
-  const mainTip = history.branches.find(b => b.name === "main")?.commitHash;
-  
-  // Trace main branch first
-  if (mainTip) {
-    let curr = mainTip;
-    while (curr) {
-      laneMap.set(curr, 0);
-      const commit = sortedCommits.find(c => c.hash === curr);
-      curr = commit?.parentHashes[0] || ""; 
-    }
-  }
+  // Sort branches to determine lane priority
+  // 1. main branch
+  // 2. checked out branch
+  // 3. other branches (could sort by newest commit)
+  const branches = [...history.branches].sort((a, b) => {
+    if (a.name === 'main') return -1;
+    if (b.name === 'main') return 1;
+    if (a.isCurrent) return -1;
+    if (b.isCurrent) return 1;
+    return 0;
+  });
 
-  // Assign remaining lanes
-  let nextLane = 1;
+  let nextLane = 0;
+
+  // Trace branch lineages to assign lanes
+  branches.forEach(branch => {
+    let curr = branch.commitHash;
+    let startedNewLane = false;
+
+    while (curr) {
+      if (!laneMap.has(curr)) {
+        if (!startedNewLane) {
+          startedNewLane = true;
+          // Only increment nextLane if it's not the very first branch (main)
+          if (nextLane > 0 || branch.name !== 'main') {
+            // Actually, just assign the current nextLane, then increment it for the next one
+            // Wait, if it's main, we want it on lane 0.
+            // Let's just use `nextLane` and increment it only when we actually use it.
+          }
+        }
+        laneMap.set(curr, nextLane);
+        const commit = sortedCommits.find(c => c.hash === curr);
+        curr = commit?.parentHashes[0] || ""; 
+      } else {
+        break; // Reached a commit already assigned to a lane
+      }
+    }
+    if (startedNewLane) {
+      nextLane++;
+    }
+  });
+
+  // Fallback for any unreachable commits (e.g. ghost commits or detached HEADs)
   sortedCommits.forEach(commit => {
     if (!laneMap.has(commit.hash)) {
       laneMap.set(commit.hash, nextLane);
-      
       let curr = commit.parentHashes[0];
       while (curr && !laneMap.has(curr)) {
         laneMap.set(curr, nextLane);
@@ -51,11 +78,7 @@ export function buildGraphLayout(history: GitHistory, preview?: PreviewState): {
     }
   });
 
-  let maxLanes = 0;
-  laneMap.forEach(lane => {
-    if (lane > maxLanes) maxLanes = lane;
-  });
-  const totalLanes = maxLanes + 1;
+  const totalLanes = nextLane;
 
   sortedCommits.forEach((commit, index) => {
     const lane = laneMap.get(commit.hash) || 0;
@@ -86,12 +109,13 @@ export function buildGraphLayout(history: GitHistory, preview?: PreviewState): {
         target: parentHash,
         type: 'strict',
         animated: !!commit.isGhost,
-        markerEnd: {
+        markerStart: isMergeEdge ? {
           type: MarkerType.ArrowClosed,
           width: 20,
           height: 20,
-          color: commit.isGhost ? "#64748b" : (isMergeEdge ? "#8b5cf6" : "#3b82f6"),
-        },
+          color: commit.isGhost ? "#64748b" : "#8b5cf6",
+          orient: "auto-start-reverse",
+        } : undefined,
         style: {
           stroke: commit.isGhost ? "#64748b" : (isMergeEdge ? "#8b5cf6" : "#3b82f6"), 
           strokeWidth: 2, 

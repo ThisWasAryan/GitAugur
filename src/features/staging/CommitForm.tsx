@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useGitEngineStore } from "../../engine/GitEngineStore";
+import { useTerminology } from "../../hooks/useTerminology";
 
 export function CommitForm() {
+  const { t } = useTerminology();
   const [commitMessage, setCommitMessage] = useState("");
   const { stagedFiles, commit, previewCommit, preview, clearPreview } = useGitEngineStore();
 
@@ -27,7 +29,7 @@ export function CommitForm() {
             setCommitMessage(e.target.value);
             if (preview.active) clearPreview();
           }}
-          placeholder="Commit message..."
+          placeholder={`${t('Commit')} message...`}
           className="w-full bg-slate-950 border border-slate-800 rounded-md p-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all resize-none h-24"
         />
         
@@ -91,7 +93,7 @@ export function CommitForm() {
                 : 'bg-slate-800 text-slate-500 cursor-not-allowed'
             }`}
           >
-            {preview.active ? 'Execute Commit' : 'Commit'}
+            {preview.active ? `Execute ${t('Commit')}` : t('Commit')}
           </button>
         </div>
       </div>

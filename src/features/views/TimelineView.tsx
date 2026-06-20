@@ -1,65 +1,81 @@
-import { Tag, Rocket, GitPullRequest, GitBranch, Users, GitCommit, GitMerge, Calendar } from 'lucide-react';
+import { Tag, Rocket, GitCommit, GitMerge, Calendar, Users, GitBranch } from 'lucide-react';
 import { useGitEngineStore } from '../../engine/GitEngineStore';
 import { differenceInDays } from 'date-fns';
+
+import { useMemo } from 'react';
+
+// ... other code will be replaced properly ...
 
 export function TimelineView() {
   const { history } = useGitEngineStore();
 
-  // Mock narrative milestones (In a real app, this would be computed by analyzing the DAG for merges/tags over time)
-  const timelineGroups = [
-    {
-      month: 'June',
-      events: [
-        {
-          id: 'j1',
+  const timelineGroups = useMemo(() => {
+    const groups: Record<string, any[]> = {};
+    
+    // Sort commits oldest to newest to build the timeline
+    const sortedCommits = [...history.commits].sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    sortedCommits.forEach((commit, index) => {
+      const date = new Date(commit.timestamp);
+      const monthYear = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+      
+      if (!groups[monthYear]) {
+        groups[monthYear] = [];
+      }
+
+      const tagsForCommit = history.tags.filter(t => t.commitHash === commit.hash);
+      tagsForCommit.forEach(tag => {
+        groups[monthYear].unshift({
+          id: `tag-${tag.name}-${commit.hash}`,
           type: 'TAG',
-          title: 'Beta Release',
-          description: 'Released v1.1.0-beta',
+          title: `Release: ${tag.name}`,
+          description: commit.message,
           icon: <Tag className="w-4 h-4 text-emerald-400" />,
           color: 'bg-emerald-500/20 border-emerald-500/50'
-        }
-      ]
-    },
-    {
-      month: 'May',
-      events: [
-        {
-          id: 'm1',
+        });
+      });
+
+      if (commit.parentHashes.length > 1) {
+        groups[monthYear].unshift({
+          id: `merge-${commit.hash}`,
           type: 'PR',
-          title: 'UI Rewrite',
-          description: 'Created UI branch, redesigned dashboard, and added settings panel',
-          icon: <GitPullRequest className="w-4 h-4 text-purple-400" />,
+          title: 'Merged Branch',
+          description: commit.message,
+          icon: <GitMerge className="w-4 h-4 text-purple-400" />,
           color: 'bg-purple-500/20 border-purple-500/50'
-        }
-      ]
-    },
-    {
-      month: 'April',
-      events: [
-        {
-          id: 'a1',
-          type: 'PR',
-          title: 'Authentication System',
-          description: 'Created auth branch, implemented Firebase Auth, and merged login system',
-          icon: <GitPullRequest className="w-4 h-4 text-purple-400" />,
-          color: 'bg-purple-500/20 border-purple-500/50'
-        }
-      ]
-    },
-    {
-      month: 'March',
-      events: [
-        {
-          id: 'ma1',
-          type: 'RELEASE',
-          title: 'Initial Project Setup',
-          description: 'Created repository, configured React, configured Tauri',
+        });
+      }
+
+      if (index === 0) {
+        groups[monthYear].unshift({
+          id: `init-${commit.hash}`,
+          type: 'INIT',
+          title: 'Repository Created',
+          description: commit.message,
           icon: <Rocket className="w-4 h-4 text-blue-400" />,
           color: 'bg-blue-500/20 border-blue-500/50'
-        }
-      ]
+        });
+      }
+    });
+
+    // Ensure we always have something to show if there are no major events
+    if (Object.keys(groups).length === 0 && history.commits.length > 0) {
+        const c = history.commits[0];
+        const m = new Date(c.timestamp).toLocaleString('default', { month: 'long', year: 'numeric' });
+        groups[m] = [{
+            id: 'fallback',
+            type: 'COMMIT',
+            title: 'Recent Activity',
+            description: c.message,
+            icon: <GitCommit className="w-4 h-4 text-slate-400" />,
+            color: 'bg-slate-800/50 border-slate-700'
+        }];
     }
-  ];
+
+    return Object.entries(groups).map(([month, events]) => ({ month, events })).reverse();
+  }, [history]);
 
   // Derive insights from history
   const oldestCommit = history.commits[history.commits.length - 1];
@@ -71,8 +87,8 @@ export function TimelineView() {
   const totalCommits = history.commits.length;
   const activeBranches = history.branches.length;
   
-  // Mocked for MVP, since we don't have a deleted branches table yet
-  const mergedBranches = 9; 
+  // Calculate merges
+  const mergedBranches = history.commits.filter(c => c.parentHashes.length > 1).length; 
   const releasesCount = history.tags.length;
 
   return (
@@ -114,7 +130,7 @@ export function TimelineView() {
                         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition-colors">
                           <h3 className="text-lg font-semibold text-slate-200 mb-2">{evt.title}</h3>
                           <p className="text-slate-400 leading-relaxed">
-                            {evt.description.split(', ').map((line, i) => (
+                            {(evt.description || '').split(', ').map((line: string, i: number) => (
                               <span key={i} className="block">• {line}</span>
                             ))}
                           </p>

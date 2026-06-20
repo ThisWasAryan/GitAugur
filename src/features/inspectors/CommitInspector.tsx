@@ -1,13 +1,56 @@
 import { useGitEngineStore } from "../../engine/GitEngineStore";
 import { useInspectorStore } from "../../stores/useInspectorStore";
-import { X, GitCommit, Clock, User, GitBranch } from "lucide-react";
+import { useRepositoryStore } from "../../stores/useRepositoryStore";
+import { invoke } from "@tauri-apps/api/core";
+import { X, GitCommit, Clock, User, GitBranch, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useState, useEffect } from "react";
 
 export function CommitInspector() {
   const { history } = useGitEngineStore();
   const { inspectedEntityId, showStaging } = useInspectorStore();
+  const { repoPath } = useRepositoryStore();
+
+  const [files, setFiles] = useState<{path: string, status: string}[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const commit = history.commits.find(c => c.hash === inspectedEntityId);
+
+  useEffect(() => {
+    if (commit && repoPath && repoPath !== 'demo') {
+      setIsLoading(true);
+      invoke('git_commit_details', { repoPath, commitHash: commit.hash })
+        .then((res: any) => {
+          if (res.success) {
+            // output is `--name-status`. e.g. "M\tfile.txt\nA\tnew.txt\n\nCommit msg"
+            // Wait, `--pretty=format:%B` output has message first, then files.
+            // Let's just parse it. The lines with tab are name-status.
+            const lines = res.stdout.split('\n');
+            const parsedFiles: {path: string, status: string}[] = [];
+            for (const line of lines) {
+              const parts = line.split('\t');
+              if (parts.length === 2 || parts.length === 3) {
+                const statusChar = parts[0][0]; // A, M, D, R, etc.
+                const path = parts[parts.length - 1];
+                let status = 'modified';
+                if (statusChar === 'A') status = 'added';
+                if (statusChar === 'D') status = 'deleted';
+                if (statusChar === 'R') status = 'renamed';
+                parsedFiles.push({ path, status });
+              }
+            }
+            setFiles(parsedFiles);
+          }
+          setIsLoading(false);
+        })
+        .catch(err => {
+          console.error(err);
+          setIsLoading(false);
+        });
+    } else if (commit?.files) {
+      setFiles(commit.files);
+    }
+  }, [commit, repoPath]);
 
   if (!commit) {
     return (
@@ -20,8 +63,6 @@ export function CommitInspector() {
 
   // Get branches containing this commit
   const branches = history.branches.filter(b => b.commitHash === commit.hash || commit.parentHashes.includes(b.commitHash));
-
-  const files = commit.files || [];
 
   return (
     <div className="w-[400px] h-full bg-slate-900 border-l border-slate-800 flex flex-col shrink-0">
@@ -75,29 +116,19 @@ export function CommitInspector() {
 
         {/* Files Changed */}
         <div className="mt-4 border-t border-slate-800 pt-4">
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Files Changed ({files.length})</h4>
+          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+            Files Changed ({files.length})
+            {isLoading && <Loader2 className="w-3 h-3 animate-spin text-blue-400" />}
+          </h4>
           <div className="space-y-4">
             {files.map((file: any) => (
               <div key={file.path} className="border border-slate-800 rounded-lg overflow-hidden">
-                <div className="bg-slate-950 px-3 py-2 text-xs font-mono text-slate-300 flex justify-between items-center border-b border-slate-800">
+                <div className="bg-slate-950 px-3 py-2 text-xs font-mono text-slate-300 flex justify-between items-center">
                   <span>{file.path}</span>
                   <span className={`px-1.5 py-0.5 rounded ${file.status === 'added' ? 'text-emerald-400 bg-emerald-950/50' : file.status === 'deleted' ? 'text-rose-400 bg-rose-950/50' : 'text-amber-400 bg-amber-950/50'}`}>
                     {file.status}
                   </span>
                 </div>
-                {file.diff && (
-                  <div className="p-2 bg-[#0d1117] overflow-x-auto text-xs">
-                    <pre className="font-mono leading-relaxed">
-                      {file.diff.split('\n').map((line: any, i: any) => {
-                        let colorClass = 'text-slate-300';
-                        if (line.startsWith('+')) colorClass = 'text-emerald-400 bg-emerald-950/20 w-full inline-block';
-                        if (line.startsWith('-')) colorClass = 'text-rose-400 bg-rose-950/20 w-full inline-block';
-                        if (line.startsWith('@@')) colorClass = 'text-blue-400';
-                        return <div key={i} className={colorClass}>{line}</div>;
-                      })}
-                    </pre>
-                  </div>
-                )}
               </div>
             ))}
           </div>

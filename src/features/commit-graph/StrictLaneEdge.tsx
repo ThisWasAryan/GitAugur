@@ -7,6 +7,7 @@ export function StrictLaneEdge({
   targetY,
   style,
   markerEnd,
+  markerStart,
 }: EdgeProps) {
   // We want the line to go straight down the source lane until it is close to the target,
   // then curve horizontally to the target lane.
@@ -37,6 +38,7 @@ export function StrictLaneEdge({
       path={path} 
       style={style} 
       markerEnd={markerEnd} 
+      markerStart={markerStart}
     />
   );
 }
