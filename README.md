@@ -9,6 +9,11 @@ Unlike traditional Electron-based clients that consume heavy system resources, G
 
 ---
 
+<img width="1918" height="1041" alt="GitAugerV1HERO1" src="https://github.com/user-attachments/assets/606c5b3f-b532-4e0b-a291-500a921ffa8a" />
+<img width="1917" height="1039" alt="GitAugerHERO2" src="https://github.com/user-attachments/assets/51f2cdca-06d2-477e-a805-5430d507693f" />
+<img width="1915" height="1037" alt="GitAugerHERO3" src="https://github.com/user-attachments/assets/02705214-86b2-4bbb-acc7-f9ef59242c8a" />
+
+---
 ## Table of Contents
 - [Graph Rendering Engine](#graph-rendering-engine)
 - [Under the Hood: Architecture & Logic](#under-the-hood-architecture--logic)
