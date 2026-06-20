@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useGitEngineStore } from '../../engine/GitEngineStore';
 import { GitBranch as GitBranchIcon, GitMerge, AlertTriangle, ArrowUp, ArrowDown, Clock, CheckCircle2 } from 'lucide-react';
+import { useNavigationStore } from '../../stores/useNavigationStore';
 
 export function RepoFlowView() {
   const { history } = useGitEngineStore();
@@ -221,8 +222,20 @@ export function RepoFlowView() {
                   </li>
                 </ul>
                 
-                <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg shadow-lg shadow-blue-900/20 transition-all">
+                <button 
+                  onClick={() => {
+                    useGitEngineStore.getState().previewMerge(selectedBranch.name);
+                    useNavigationStore.getState().setGraphMode('GIT_GRAPH');
+                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg shadow-lg shadow-blue-900/20 transition-all mb-2"
+                >
                   Preview Merge
+                </button>
+                <button 
+                  onClick={() => useGitEngineStore.getState().merge(selectedBranch.name)}
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 rounded-lg transition-all"
+                >
+                  Merge into Current Branch
                 </button>
               </div>
             )}

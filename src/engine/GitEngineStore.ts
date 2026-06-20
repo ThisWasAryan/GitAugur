@@ -420,12 +420,15 @@ export const useGitEngineStore = create<GitEngineState>((set, get) => ({
     const repoPath = useRepositoryStore.getState().repoPath;
     if (!repoPath) return;
     try {
-      await invoke('git_cherry_pick', { repoPath, commitHash });
-      toast.success(`Successfully cherry-picked ${commitHash.substring(0, 7)}`);
+      const result: any = await invoke('git_cherry_pick', { repoPath, commitHash });
+      if (result.success) {
+        toast.success(`Successfully cherry-picked ${commitHash.substring(0, 7)}`);
+      } else {
+        toast.error(`Cherry-pick failed: ${result.stderr || result.stdout}`);
+      }
       get().fetchRepoState(repoPath);
     } catch (err: any) {
       toast.error(`Cherry-pick failed: ${err}`);
-      // Usually need to abort if failed
     }
   },
 
@@ -433,7 +436,12 @@ export const useGitEngineStore = create<GitEngineState>((set, get) => ({
     const repoPath = useRepositoryStore.getState().repoPath;
     if (repoPath) {
       try {
-        await invoke('git_exec', { repoPath, args: ['rebase', targetBranch] });
+        const result: any = await invoke('git_exec', { repoPath, args: ['rebase', targetBranch] });
+        if (result.success) {
+          toast.success(`Successfully rebased onto ${targetBranch}`);
+        } else {
+          toast.error(`Failed to rebase: ${result.stderr || result.stdout}`);
+        }
         get().fetchRepoState(repoPath);
       } catch (err) {
         toast.error(`Failed to rebase: ${err}`);
@@ -445,10 +453,15 @@ export const useGitEngineStore = create<GitEngineState>((set, get) => ({
     const repoPath = useRepositoryStore.getState().repoPath;
     if (repoPath) {
       try {
-        await invoke('git_exec', { repoPath, args: ['merge', sourceBranch] });
+        const result: any = await invoke('git_exec', { repoPath, args: ['merge', sourceBranch] });
+        if (result.success) {
+          toast.success(`Successfully merged ${sourceBranch}`);
+        } else {
+          toast.error(`Failed to merge: ${result.stderr || result.stdout}`);
+        }
         get().fetchRepoState(repoPath);
       } catch (err) {
-        console.error("Failed to merge:", err);
+        toast.error(`Failed to merge: ${err}`);
       }
     }
   },
