@@ -72,7 +72,7 @@ Because GitAugur is a Tauri application, it requires both Node.js (for the front
 ### Installation Steps
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/aryan/GitAugur.git
+   git clone https://github.com/ThisWasAryan/GitAugur.git
    cd GitAugur
    ```
 2. **Install frontend dependencies:**
