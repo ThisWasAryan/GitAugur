@@ -1,30 +1,20 @@
-# GitAugur Roadmap
+# Roadmap
 
-## Phase 1: Foundation (Current)
-* Tauri application shell and React setup.
-* Basic Rust backend to call system Git CLI.
-* Initialize SQLite storage.
-* Scaffold repository architecture and UI shell.
-* Establish documentation.
+## Phase 1: Core Read-Only Operations (Completed)
+- Render repository graphs, branches, tags, and commits accurately.
+- Provide high-performance native navigation.
+- Implement diff viewers and tree explorers.
 
-## Phase 2: Core Git Visualization
-* Implement the React Flow commit graph.
-* Render branches, tags, and commits accurately.
-* Implement basic repository awareness (status, staged files).
-* Implement File Tree view.
+## Phase 2: Fundamental Write Operations (Current)
+- Staging, Unstaging, Committing.
+- Branch Creation, Checkout, and Deletion.
+- Fetch, Pull, Push implementations.
 
-## Phase 3: Operations & Previews
-* Implement structured operations (Commit, Push, Pull, Checkout).
-* Develop the Preview System for operations.
-* Integrate Beginner/Advanced modes and explanations.
+## Phase 3: Interactive Visual Conflict Resolution
+- Provide a three-way merge viewer similar to JetBrains IDEs.
+- Automatic Git Stash preservation during dirty pulls.
 
-## Phase 4: Conflict Resolution & Pull Requests
-* Build out the conflict resolution UI.
-* GitHub OAuth integration.
-* First-class Pull Request workflows.
-
-## Phase 5: Advanced Features
-* Interactive commit graph manipulation.
-* Drag-and-drop history operations.
-* Advanced repository analytics.
-* GitHub issue management and Actions monitoring.
+## Phase 4: Integrations
+- GitHub & GitLab SSO via OAuth.
+- Issue and Pull Request viewers native to the client.
+- Deep integration with CI/CD action pipelines.

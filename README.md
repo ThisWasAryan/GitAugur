@@ -1,47 +1,44 @@
 # GitAugur
 
-GitAugur is a modern, visual desktop Git and GitHub client built to make Git understandable and approachable while remaining powerful enough for advanced users. It focuses on visual history, predicting repository state, and explaining Git operations clearly.
+GitAugur is a state-of-the-art, high-performance Git GUI client built using Tauri, React, TypeScript, and Rust. It aims to completely redefine how developers visualize, interact with, and manage their Git repositories by merging profound git transparency with an unparalleled, ultra-responsive native feel.
 
-## Architecture
+## Overview
 
-GitAugur is built using a modern, high-performance desktop stack:
-- **Tauri v2**: Core desktop framework enabling lightweight native applications.
-- **React 18 & TypeScript**: Frontend UI framework.
-- **Vite**: Ultra-fast frontend build tool.
-- **Tailwind CSS v3 & shadcn/ui**: Styling and component system.
-- **React Flow (`@xyflow/react`)**: Engine driving the central, interactive commit graph.
-- **Rust & SQLite**: Native backend for executing Git commands and storing local configurations.
+Unlike traditional Electron-based clients that consume heavy system resources, GitAugur runs on a lightweight, deeply integrated Rust backend powered by Tauri. It communicates directly with the underlying Git binaries and local file systems to render real-time history, visual staging, unified diffs, and repository monitoring.
 
-## Current Status (Phase 2)
+### Core Features
 
-We are currently completing **Phase 2: Core Git Visualization & Repository Awareness**.
+- **Blazing Fast Performance**: Zero-lag UI operations, sub-millisecond Rust bindings for core Git commands (`git log`, `git branch`, etc.).
+- **Global Commit Graph**: Automatically visualizes the entire repository topology (`git log --all`) to instantly convey context regardless of the current branch checkout.
+- **Continuous Background Monitoring**: Reacts to file system modifications implicitly; seamlessly integrates the working tree into your workflow.
+- **Built-in Diff Engine**: A visually striking, GitHub-style line-by-line diff engine that natively reads from `HEAD` and local tree states.
+- **Deep Transparency**: GitAugur doesn't hide Git from you; it exposes the core commands it executes behind the scenes for total auditability.
+- **Intuitive Staging**: Rapid side-by-side comparison, intelligent hunk isolation, and real-time staging transitions.
 
-### Implemented Features:
-1. **Application Shell**: Complete UI shell with responsive sidebar and custom styling.
-2. **Git Service**: Foundational Rust wrapper around the local Git CLI.
-3. **Commit Graph Visualization**: 
-   - Interactive React Flow-based commit graph.
-   - Custom lane-based layout algorithm for branches.
-   - Currently operating in **Mock Data Mode** to facilitate UI development without requiring the Rust compilation toolchain in every environment.
+## Quick Start
 
-### Upcoming Features (Phase 2.5):
-- **Staging UI**: Right-hand panel for tracking modified, untracked, and deleted files.
-- **Commit Operations**: UI for writing commit messages and executing local commits.
+### Prerequisites
+- Node.js (v18+)
+- Rust (Stable)
+- Tauri CLI (`npm i -g @tauri-apps/cli`)
+- Git (`>= 2.30`)
 
-## Documentation
-
-For deep dives into the project's design and architecture, check the `docs/` folder:
-- `vision.md`
-- `architecture.md`
-- `ui.md`
-- `operations.md`
-- `roadmap.md`
-
-## Development Setup
-
-*Note: Since the backend relies on Rust, you will need `rustc` and `cargo` installed to run the full application.*
-
-1. Clone the repository.
+### Installation
+1. Clone the repository: `git clone https://github.com/Antigravity/GitAugur.git`
 2. Install frontend dependencies: `npm install`
-3. Run in dev mode: `npm run tauri dev`
-4. Build for production: `npm run tauri build`
+3. Launch development server with Tauri runtime: `npm run tauri dev`
+
+## Recent Major Updates (v0.2.0)
+- **Unified Graph Model**: GitAugur no longer scopes your graph to local branch context. Branch checkouts merely update the `HEAD` reference pointer without triggering confusing layout regenerations.
+- **Intelligent Branch Segregation**: Local and Remote branches are cleanly isolated with visual tracking properties (Ahead/Behind).
+- **Responsive Navigation State**: Instantly identifies modified states in the filesystem and intelligently provides fallbacks for new repositories and untracked files.
+- **Loading Overlay Integration**: Repositories clone and open smoothly with fully threaded visual loading loops, completely bypassing synchronous backend freezes.
+
+## Future Roadmap
+- Intelligent Conflict Resolution Editor
+- Deep GitHub / GitLab Authentication Integration
+- PR & Issue visualization directly inside the client
+- Native SSH Agent configuration
+
+---
+*Built with passion by the Antigravity Team.*

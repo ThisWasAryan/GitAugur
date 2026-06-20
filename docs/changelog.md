@@ -1,13 +1,15 @@
 # Changelog
 
-All notable changes to GitAugur will be documented in this file.
+## v0.2.0 (Current)
+- Added global `--all` repository graph context to `git log` parser.
+- Introduced React `setInterval` background polling for repository working-tree state detection.
+- Completely refactored the Git Log `CommitGraph.tsx` to handle decoupled branches and tags natively.
+- Added visual loading indicators (`isOpening`, `isCloning`) for asynchronous Tauri blocks.
+- Solved silent failures during string serialization with null delimiters (`%00`).
+- Branch dropdown fully segregated into Local and Remote lists with interactive `Create Branch` input fields.
+- Rewrote `FilesView.tsx` and backend `git_show_file` to prioritize working tree fallbacks (`std::fs::read_to_string`).
 
-## [Unreleased]
-
-### Added
-* Initial project scaffolding with Tauri v2, React, TypeScript, and Vite.
-* Tailwind CSS v3 and shadcn/ui configuration.
-* Core documentation files (`vision.md`, `architecture.md`, `ui.md`, `operations.md`, `roadmap.md`, `decisions.md`).
-* **Phase 2:** React Flow-based Commit Graph visualization (using robust mock data).
-* Custom `CommitNode` with branch lane indicators, tag support, and author metadata.
-* `graphLayout.ts` utility to calculate graph geometry and branch tracing.
+## v0.1.0
+- Initial Repository Setup
+- React + Tauri Bindings
+- Implementation of mock layout scaffolding

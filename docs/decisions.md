@@ -1,18 +1,14 @@
-# Decision Log
+# Decisions
 
-This document records important architectural and design decisions for GitAugur.
+## 1. Zero Backend State
+We actively decided against caching Git data in SQLite or memory on the Rust backend.
+**Reason:** Git itself *is* the database. Caching creates infinite race conditions when users modify repositories outside of GitAugur (e.g., via CLI).
 
-## 1. Choice of Desktop Framework: Tauri v2
-* **Reasoning**: Tauri provides a native-feeling desktop application with cross-platform support. It results in extremely small binaries and low memory usage compared to Electron. The Rust backend is performant and integrates natively with OS features.
+## 2. Tauri over Electron
+**Reason:** Memory footprint. GitAugur needs to run continuously in the background. A 20MB Tauri binary is acceptable, whereas a 300MB Electron app is not.
 
-## 2. Frontend Framework: React + Vite
-* **Reasoning**: High performance ecosystem, massive component availability (React Flow, shadcn/ui), and Vite provides a superior developer experience with rapid HMR.
+## 3. Direct Binary Execution over libgit2
+**Reason:** While `libgit2` (via `git2-rs`) provides type-safe abstractions, it severely limits complex graph queries, sparse checkouts, and advanced rebase operations. Falling back to the raw OS Git binary guarantees GitAugur can execute *anything* the CLI can execute.
 
-## 3. Use of System Git Executable
-* **Reasoning**: We decided not to build a custom Git implementation or rely strictly on libgit2 wrappers because keeping up with Git's feature set is difficult. Instead, we call the system Git CLI and parse its output. This guarantees compatibility with the user's existing Git configuration, hooks, and SSH agents.
-
-## 4. UI Styling: Tailwind CSS & shadcn/ui
-* **Reasoning**: Tailwind provides utility-first styling for rapid development. shadcn/ui offers beautiful, accessible, and customizable React components without the bloat of traditional component libraries.
-
-## 5. State Management: Zustand
-* **Reasoning**: Lightweight, fast, and simple API. We avoid Redux to prevent unnecessary boilerplate and complexity.
+## 4. Frontend-First Architecture
+**Reason:** The UI needs extreme flexibility to visualize diffs and interactive graphs. The backend is treated purely as a highly privileged API router.

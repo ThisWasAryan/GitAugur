@@ -1,22 +1,16 @@
-# UI & Interface Guidelines
+# UI System
 
-## Primary Layout
-The primary screen features a repository view where the **commit graph** is the central focus. The graph should always be visible and support branch visualization, tags, merge commits, release markers, and remote tracking branches.
+GitAugur utilizes a purely custom, ultra-modern UI heavily inspired by GitHub's Primer and Tailwind's syntax.
 
-### Sidebar Categories
-* Files
-* Branches
-* Tags
-* Pull Requests
-* Contributors
-* Releases
-* Stashes
-* Settings
+### Stack
+- **TailwindCSS**: All layout boundaries, grids, and typographies are managed via pure Tailwind classes.
+- **Lucide React**: Vector icons strictly sourced from `lucide-react` for high-fidelity SVG scaling.
+- **Dark Mode Native**: Built intentionally as a dark-mode first client (slate-950/slate-900 palettes).
 
-## Modes
-* **Beginner Mode**: Explains Git concepts throughout the interface. Heavily relies on tooltips and step-by-step explanations for operations.
-* **Intermediate Mode**: Balanced explanations.
-* **Advanced Mode**: Reduces explanations, maximizes efficiency, and exposes powerful operations directly.
+### Components
+- `DiffViewer.tsx`: Custom parsing engine handling line additions, deletions, context boundaries, and headers natively without relying on heavy external Diff libraries.
+- `CommitGraph.tsx`: Vectorized SVG pathways rendering branch topologies.
+- `TutorPanel.tsx`: Contextually aware Git assistance panel explaining obscure terminology to juniors.
 
-## Conflict Resolution UI
-Explain *why* conflicts occur instead of showing raw Git messages. Provide a timeline of changes, branch comparison, visual conflict presentation, and clear resolution options (Keep Source, Keep Target, Keep Both, Manual Edit).
+### Layout Principles
+`flex-1`, `min-h-0`, and `overflow-hidden` are used rigorously on root containers to enforce strict internal scrollable regions rather than document-level scrolling.

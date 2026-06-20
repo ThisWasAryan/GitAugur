@@ -1,26 +1,22 @@
-# Git Operations
+# Operations
 
-Every Git operation in GitAugur is represented as a structured operation object. This approach standardizes how operations are previewed, executed, and analyzed for risk.
+GitAugur requires zero custom daemons or services.
 
-## Supported Operations
-* Commit
-* Push
-* Pull
-* Merge
-* Rebase
-* Cherry Pick
-* Reset
-* Force Push
+### Development Build
+```bash
+npm install
+npm run tauri dev
+```
 
-## Operation Lifecycle
-1. **Initiation**: The user triggers an operation via the UI.
-2. **Analysis**: The system determines the necessary Git commands.
-3. **Preview**: The UI presents a preview of the operation:
-   * Expected repository state
-   * Commit graph changes
-   * Files affected
-4. **Risk Assessment**:
-   * Warnings about destructive changes.
-   * Recovery recommendations (e.g., creating a backup branch or safety tag before a force push).
-5. **Execution**: The system executes the Git commands sequentially.
-6. **Confirmation/Recovery**: Success message or a rollback/recovery option upon failure.
+### Production Build
+```bash
+npm run tauri build
+```
+This generates binaries in `src-tauri/target/release/bundle/`.
+
+### Logging
+Tauri backend logs are routed directly into the terminal during `dev`. Front-end states and errors are dispatched into the browser dev console.
+
+### Troubleshooting
+- **No Branches Shown:** Ensure your path contains `.git` and your log formats correctly emit `%00` delimiters.
+- **UI Freezes:** Check for synchronous `await invoke` calls blocking the main React render thread. Ensure `setTimeout` yields are in place.

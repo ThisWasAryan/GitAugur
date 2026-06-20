@@ -1,26 +1,21 @@
-# System Architecture
+# Architecture
 
-## Technology Stack
-* **Framework**: Tauri v2
-* **Frontend**: React, TypeScript, Vite
-* **Styling**: Tailwind CSS v3, shadcn/ui
-* **State Management**: Zustand
-* **Backend**: Rust
-* **Storage**: SQLite
-* **Git Engine**: System Git CLI executable
-* **GitHub Integration**: GitHub REST & GraphQL APIs via OAuth
-* **Graph Visualization**: React Flow (initial)
+GitAugur follows a typical Tauri application structure, balancing front-end responsivity with back-end safety and performance.
 
-## Architecture Principles
-* Avoid unnecessary complexity (No Microservices, CQRS, Event sourcing, deep inheritance hierarchies).
-* Favor Feature-based architecture, explicit services, clear data flow, strong typing, and readable code.
+## Frontend (React/TypeScript)
 
-## Folder Structure
-* `src/features/`: Isolated feature modules (commit-graph, repositories, branches, etc.)
-* `src/services/`: API and external system wrappers (git, github, storage)
-* `src/components/`: Reusable UI components
-* `src/hooks/`: Shared React hooks
-* `src/stores/`: Zustand state definitions
-* `src/types/`: TypeScript definitions
-* `src/utils/`: Helper functions
-* `src-tauri/src/`: Rust backend modules (git, storage, commands)
+The frontend is a strictly strictly single-page application (SPA) using React 18, Vite, and Zustand for state management.
+- **`GitEngineStore`**: Acts as the central nervous system connecting React to the Rust backend. Handles background polling, git metadata caching, and repository action dispatching.
+- **Component Layer**: UI components heavily utilize TailwindCSS and Lucide React.
+- **Layout Management**: Context-aware routing without strict URL boundaries. ContextMenus, Modals, and the Command Palette exist outside the primary layout flow.
+
+## Backend (Rust/Tauri)
+
+The Rust backend is entirely stateless in regards to Git tracking, relying purely on executing OS-level Git binaries (`git rev-parse`, `git log`, `git ls-tree`).
+- **`commands/mod.rs`**: Exposes specific Tauri IPC invokes like `git_log`, `git_diff`, `git_branch`.
+- **`git/parse.rs`**: Custom, zero-copy parsers that take raw null-delimited (`%00`) standard output strings from Git commands and map them directly into structured Rust `structs` before serialization.
+- **`git/models.rs`**: Serde-derived models matching TypeScript interfaces seamlessly.
+
+## Concurrency
+
+All Git operations spawn sub-processes via `std::process::Command`. Emitting real-time stdout updates uses Tauri's event emitter loop (`Window::emit`), ensuring the UI stays completely reactive during prolonged `clone`, `fetch`, or `push` executions.
