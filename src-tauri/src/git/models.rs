@@ -28,6 +28,10 @@ pub struct GitBranch {
     pub upstream: Option<String>,
     pub ahead: u32,
     pub behind: u32,
+    #[serde(rename = "aheadDefault")]
+    pub ahead_default: u32,
+    #[serde(rename = "behindDefault")]
+    pub behind_default: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

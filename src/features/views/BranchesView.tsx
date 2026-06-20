@@ -1,4 +1,4 @@
-import { GitBranch, Plus, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
+import { GitBranch, Plus, Copy, Trash2, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { useGitEngineStore } from "../../engine/GitEngineStore";
 import { invoke } from "@tauri-apps/api/core";
@@ -18,67 +18,134 @@ export function BranchesView() {
   const [preview, setPreview] = useState<{isOpen: boolean, action: 'CHECKOUT' | 'DELETE' | null, branch: string}>({ isOpen: false, action: null, branch: "" });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
-  const localBranches = branches.filter(b => !b.isRemote);
-  const remoteBranches = branches.filter(b => b.isRemote);
+  const defaultBranches = branches.filter(b => b.name === 'main' || b.name === 'master');
+  const localBranches = branches.filter(b => !b.isRemote && b.name !== 'main' && b.name !== 'master');
+  const remoteBranches = branches.filter(b => b.isRemote && b.name !== 'origin/main' && b.name !== 'origin/master');
 
-  const renderBranch = (branch: GitBranchType) => {
-    const branchCommit = history.commits.find(c => c.hash === branch.commitHash);
-    const lastCommitTime = branchCommit ? new Date(branchCommit.timestamp).toLocaleDateString() : 'Unknown';
-    const ahead = branch.ahead || 0;
-    const behind = branch.behind || 0;
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  const renderBranchTable = (title: string, branchList: GitBranchType[]) => {
+    if (branchList.length === 0) return null;
+
+    const isDefaultBranch = (name: string) => name === 'main' || name === 'master' || name === 'origin/main' || name === 'origin/master';
 
     return (
-      <div 
-        key={branch.name} 
-        className={`px-6 py-4 flex items-center justify-between hover:bg-slate-800/50 transition-colors cursor-pointer group ${branch.isCurrent ? 'bg-blue-950/10' : ''}`}
-        onClick={() => inspectEntity('branch', branch.name)}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          showMenu(e.clientX, e.clientY, [
-            { label: 'Checkout', onClick: () => checkout(branch.name) },
-            { divider: true, onClick: () => {} },
-            { label: 'Delete Branch', danger: true, onClick: () => setPreview({ isOpen: true, action: 'DELETE', branch: branch.name }) }
-          ]);
-        }}
-      >
-        <div className="flex items-center gap-4">
-          <div className={`w-2 h-2 rounded-full ${branch.isCurrent ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]' : 'bg-transparent'}`}></div>
-          <div>
-            <div className="flex items-center gap-3">
-              <span className={`font-mono text-sm ${branch.isCurrent ? 'font-semibold text-blue-400' : 'font-medium text-slate-300'}`}>{branch.name}</span>
-              {branch.isCurrent && <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-medium">Active</span>}
-            </div>
-            <div className="text-xs text-slate-500 mt-1">
-              Last commit: <span className="font-mono text-slate-400">{branch.commitHash.slice(0, 7)}</span> • {lastCommitTime}
-            </div>
+      <div className="mb-8">
+        <h2 className="text-sm font-bold text-slate-100 mb-3">{title}</h2>
+        <div className="bg-[#0d1117] border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+          {/* Table Header */}
+          <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-slate-800 text-xs font-semibold text-slate-400">
+            <div className="col-span-4">Branch</div>
+            <div className="col-span-2">Updated</div>
+            <div className="col-span-2">Check status</div>
+            <div className="col-span-2">Behind | Ahead</div>
+            <div className="col-span-2">Pull request</div>
           </div>
-        </div>
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3 text-xs font-medium">
-            <span className={`flex items-center gap-1 px-2 py-1 rounded ${ahead > 0 ? 'text-emerald-400 bg-emerald-950/50' : 'text-slate-500'}`} title="Ahead of origin">
-              <ArrowUp className="w-3 h-3" /> {ahead}
-            </span>
-            <span className={`flex items-center gap-1 px-2 py-1 rounded ${behind > 0 ? 'text-rose-400 bg-rose-950/50' : 'text-slate-500'}`} title="Behind origin">
-              <ArrowDown className="w-3 h-3" /> {behind}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            {!branch.isCurrent && !branch.isRemote && (
-              <button 
-                onClick={() => setPreview({ isOpen: true, action: 'CHECKOUT', branch: branch.name })}
-                className="opacity-0 group-hover:opacity-100 text-slate-300 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded text-xs font-medium transition-all"
-              >
-                Checkout
-              </button>
-            )}
-            {!branch.isCurrent && (
-              <button 
-                onClick={() => setPreview({ isOpen: true, action: 'DELETE', branch: branch.name })}
-                className="opacity-0 group-hover:opacity-100 text-rose-400 hover:text-rose-300 p-1.5 hover:bg-rose-950/50 rounded transition-all"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
+          {/* Table Body */}
+          <div className="divide-y divide-slate-800/50">
+            {branchList.map(branch => {
+              const branchCommit = history.commits.find(c => c.hash === branch.commitHash);
+              const lastCommitTime = branchCommit ? new Date(branchCommit.timestamp).toLocaleDateString() : 'Unknown';
+              const ahead = branch.aheadDefault || 0;
+              const behind = branch.behindDefault || 0;
+              const isDefault = isDefaultBranch(branch.name);
+              
+              // calculate bar ratio
+              const total = ahead + behind;
+              const behindPercent = total > 0 ? (behind / total) * 100 : 0;
+              const aheadPercent = total > 0 ? (ahead / total) * 100 : 0;
+
+              return (
+                <div 
+                  key={branch.name}
+                  className={`grid grid-cols-12 gap-4 px-6 py-3 items-center hover:bg-slate-800/20 transition-colors group ${branch.isCurrent ? 'bg-blue-950/10' : ''}`}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    showMenu(e.clientX, e.clientY, [
+                      { label: 'Checkout', onClick: () => checkout(branch.name) },
+                      { divider: true, onClick: () => {} },
+                      { label: 'Delete Branch', danger: true, onClick: () => setPreview({ isOpen: true, action: 'DELETE', branch: branch.name }) }
+                    ]);
+                  }}
+                >
+                  <div className="col-span-4 flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                       <span 
+                          className={`font-mono text-xs px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-transparent cursor-pointer hover:underline`}
+                          onClick={() => inspectEntity('branch', branch.name)}
+                       >
+                         {branch.name}
+                       </span>
+                       <button 
+                         className="text-slate-500 hover:text-slate-300 transition-colors" 
+                         title="Copy branch name"
+                         onClick={(e) => { e.stopPropagation(); copyToClipboard(branch.name); }}
+                       >
+                         <Copy className="w-3.5 h-3.5" />
+                       </button>
+                    </div>
+                  </div>
+                  
+                  <div className="col-span-2 flex items-center gap-2 text-xs text-slate-300">
+                    <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-bold overflow-hidden shadow-inner">
+                       <span className="text-slate-400">👤</span>
+                    </div>
+                    {lastCommitTime}
+                  </div>
+                  
+                  <div className="col-span-2 flex items-center text-xs text-slate-500">
+                    {/* Empty check status */}
+                  </div>
+                  
+                  <div className="col-span-2 flex flex-col justify-center">
+                    {isDefault ? (
+                      <span className="px-2.5 py-0.5 rounded-full border border-slate-700 text-xs text-slate-400 w-fit bg-slate-800/50">Default</span>
+                    ) : (
+                      <div className="flex flex-col gap-1.5 w-28">
+                        <div className="flex items-center justify-between text-xs text-slate-400">
+                           <span>{behind}</span>
+                           <span>{ahead}</span>
+                        </div>
+                        <div className="h-1 w-full flex bg-slate-800 rounded-full overflow-hidden">
+                          {total > 0 ? (
+                            <>
+                              <div className="h-full bg-slate-400" style={{ width: `${behindPercent}%` }}></div>
+                              <div className="h-full bg-blue-500" style={{ width: `${aheadPercent}%` }}></div>
+                            </>
+                          ) : (
+                            <div className="h-full bg-slate-600 w-full"></div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="col-span-2 flex items-center justify-end gap-2 pr-2">
+                    {!branch.isCurrent && !branch.isRemote && (
+                      <button 
+                        onClick={() => setPreview({ isOpen: true, action: 'CHECKOUT', branch: branch.name })} 
+                        className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-white px-2 py-1 rounded text-xs transition-all bg-slate-800 hover:bg-slate-700 border border-slate-700"
+                      >
+                        Checkout
+                      </button>
+                    )}
+                    {!branch.isCurrent && (
+                      <button 
+                        onClick={() => setPreview({ isOpen: true, action: 'DELETE', branch: branch.name })} 
+                        className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 p-1.5 rounded transition-all hover:bg-slate-800"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button className="text-slate-500 hover:text-slate-300 p-1 transition-colors">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -86,42 +153,28 @@ export function BranchesView() {
   };
 
   return (
-    <div className="flex-1 h-full bg-slate-950 p-8 overflow-y-auto min-h-0">
-      <div className="flex items-center justify-between mb-8">
+    <div className="flex-1 h-full bg-[#010409] p-8 overflow-y-auto min-h-0">
+      <div className="flex items-center justify-between mb-8 max-w-6xl mx-auto">
         <div>
           <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-3">
-            <GitBranch className="w-8 h-8 text-blue-500" />
+            <GitBranch className="w-6 h-6 text-slate-300" />
             Branches
           </h1>
-          <p className="text-slate-400 mt-1">Manage local and remote branches.</p>
         </div>
         <div className="flex gap-2">
           <button 
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-blue-900/20"
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
           >
-            <Plus className="w-4 h-4" />
-            New Branch
+            New branch
           </button>
         </div>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden mb-8">
-        <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/50">
-          <h2 className="font-medium text-slate-300">Local Branches</h2>
-        </div>
-        <div className="divide-y divide-slate-800/50">
-          {localBranches.map(renderBranch)}
-        </div>
-      </div>
-
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/50">
-          <h2 className="font-medium text-slate-300">Remote Branches</h2>
-        </div>
-        <div className="divide-y divide-slate-800/50">
-          {remoteBranches.map(renderBranch)}
-        </div>
+      <div className="max-w-6xl mx-auto">
+        {renderBranchTable('Default', defaultBranches)}
+        {renderBranchTable('Your branches', localBranches)}
+        {renderBranchTable('Remote branches', remoteBranches)}
       </div>
 
       <ActionPreviewModal 

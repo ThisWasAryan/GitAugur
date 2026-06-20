@@ -52,6 +52,25 @@ pub fn parse_history(repo_path: &str) -> Result<GitHistoryData, String> {
         head_hash.clone()
     };
 
+    // Try to determine the default branch
+    let mut default_branch = "main".to_string();
+    if let Ok(default_res) = execute_git_command(repo_path, &["symbolic-ref", "--short", "refs/remotes/origin/HEAD"]) {
+        if default_res.success && !default_res.stdout.trim().is_empty() {
+            let trimmed = default_res.stdout.trim();
+            if let Some(slash) = trimmed.find('/') {
+                default_branch = trimmed[slash+1..].to_string();
+            } else {
+                default_branch = trimmed.to_string();
+            }
+        } else {
+            if let Ok(master_res) = execute_git_command(repo_path, &["rev-parse", "--verify", "master"]) {
+                if master_res.success {
+                    default_branch = "master".to_string();
+                }
+            }
+        }
+    }
+
     // 2. Fetch Branches
     let mut branches = Vec::new();
     let branch_result = execute_git_command(
@@ -96,6 +115,34 @@ pub fn parse_history(repo_path: &str) -> Result<GitHistoryData, String> {
                     }
                 }
 
+                let mut ahead_default = 0;
+                let mut behind_default = 0;
+                
+                // Calculate ahead/behind default
+                if name != default_branch && name != format!("origin/{}", default_branch) {
+                    let compare_target = if is_remote && name.starts_with("origin/") {
+                        format!("origin/{}", default_branch)
+                    } else {
+                        default_branch.clone()
+                    };
+                    
+                    let compare_range = format!("{}...{}", compare_target, name);
+                    if let Ok(rev_list_res) = execute_git_command(repo_path, &["rev-list", "--left-right", "--count", &compare_range]) {
+                        if rev_list_res.success {
+                            let trimmed = rev_list_res.stdout.trim();
+                            let counts: Vec<&str> = trimmed.split_whitespace().collect();
+                            if counts.len() == 2 {
+                                if let Ok(b) = counts[0].parse::<u32>() {
+                                    behind_default = b;
+                                }
+                                if let Ok(a) = counts[1].parse::<u32>() {
+                                    ahead_default = a;
+                                }
+                            }
+                        }
+                    }
+                }
+
                 branches.push(GitBranch {
                     name,
                     commit_hash,
@@ -104,6 +151,8 @@ pub fn parse_history(repo_path: &str) -> Result<GitHistoryData, String> {
                     upstream,
                     ahead,
                     behind,
+                    ahead_default,
+                    behind_default,
                 });
             }
         }

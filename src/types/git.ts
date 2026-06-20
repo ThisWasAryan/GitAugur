@@ -21,6 +21,8 @@ export interface GitBranch {
   upstream?: string;
   ahead?: number;
   behind?: number;
+  aheadDefault?: number;
+  behindDefault?: number;
 }
 
 export interface GitTag {
