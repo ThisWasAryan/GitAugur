@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { invoke } from '@tauri-apps/api/core';
 
 export interface FileNode {
   id: string;
@@ -13,73 +14,19 @@ export interface FileNode {
   isOpen?: boolean;
 }
 
-const mockFileSystem: FileNode[] = [
-  {
-    id: 'src',
-    name: 'src',
-    type: 'folder',
-    isOpen: true,
-    children: [
-      {
-        id: 'src/features',
-        name: 'features',
-        type: 'folder',
-        isOpen: true,
-        children: [
-          {
-            id: 'src/features/CommitGraph.tsx',
-            name: 'CommitGraph.tsx',
-            type: 'file',
-            status: 'modified',
-            oldContent: `import { useMemo } from "react";\nimport { ReactFlow } from "@xyflow/react";\n\nexport function CommitGraph() {\n  return (\n    <div className="absolute inset-0">\n      <ReactFlow />\n    </div>\n  );\n}`,
-            newContent: `import { useMemo } from "react";\nimport { ReactFlow, Background } from "@xyflow/react";\nimport { useGitEngineStore } from "../../engine/GitEngineStore";\n\nexport function CommitGraph() {\n  const engine = useGitEngineStore();\n  return (\n    <div className="absolute inset-0 bg-slate-950">\n      <ReactFlow>\n        <Background color="#334155" />\n      </ReactFlow>\n    </div>\n  );\n}`,
-          },
-          {
-            id: 'src/features/CommitNode.tsx',
-            name: 'CommitNode.tsx',
-            type: 'file',
-            status: 'unmodified',
-            content: `export function CommitNode() {\n  return <div className="p-2 border rounded">Commit</div>;\n}`
-          }
-        ]
-      },
-      {
-        id: 'src/App.tsx',
-        name: 'App.tsx',
-        type: 'file',
-        status: 'unmodified',
-        content: `export default function App() {\n  return <main>App</main>;\n}`
-      }
-    ]
-  },
-  {
-    id: 'package.json',
-    name: 'package.json',
-    type: 'file',
-    content: `{
-  "name": "git-augur",
-  "version": "1.0.0"
-}`
-  },
-  {
-    id: '.env.local',
-    name: '.env.local',
-    type: 'file',
-    isIgnored: true,
-    content: `VITE_API_KEY=secret123`
-  }
-];
-
 interface FileStore {
   files: FileNode[];
   activeFileId: string | null;
   setActiveFile: (id: string) => void;
   toggleFolder: (id: string) => void;
+  fetchFiles: (repoPath: string) => Promise<void>;
+  fetchFileContent: (repoPath: string, filePath: string) => Promise<void>;
+  setFiles: (files: FileNode[]) => void;
 }
 
 export const useFileStore = create<FileStore>((set) => ({
-  files: mockFileSystem,
-  activeFileId: 'src/features/CommitGraph.tsx',
+  files: [],
+  activeFileId: null,
   setActiveFile: (id) => set({ activeFileId: id }),
   toggleFolder: (id) => set((state) => {
     // Deep clone and toggle logic
@@ -96,4 +43,73 @@ export const useFileStore = create<FileStore>((set) => ({
     };
     return { files: toggleNode(state.files) };
   }),
+  setFiles: (files) => set({ files }),
+  fetchFiles: async (repoPath: string) => {
+    if (!repoPath) return;
+
+    try {
+      const res: any = await invoke('git_ls_tree', { repoPath });
+      if (res.success && res.stdout) {
+        const paths = res.stdout.split('\n').filter(Boolean);
+        
+        // Build a tree from flat paths
+        const root: FileNode[] = [];
+        
+        for (const path of paths) {
+          const parts = path.split('/');
+          let currentLevel = root;
+          let currentPath = '';
+          
+          for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            currentPath = currentPath ? `${currentPath}/${part}` : part;
+            const isFile = i === parts.length - 1;
+            
+            let existing = currentLevel.find(n => n.name === part);
+            if (!existing) {
+              existing = {
+                id: currentPath,
+                name: part,
+                type: isFile ? 'file' : 'folder',
+                isOpen: false,
+                children: isFile ? undefined : []
+              };
+              currentLevel.push(existing);
+            }
+            if (!isFile) {
+              currentLevel = existing.children!;
+            }
+          }
+        }
+        
+        set({ files: root });
+      }
+    } catch (err) {
+      console.error('Failed to fetch files tree:', err);
+    }
+  },
+  fetchFileContent: async (repoPath: string, filePath: string) => {
+    try {
+      const res: any = await invoke('git_show_file', { repoPath, filePath });
+      if (res.success) {
+        set(state => {
+          // Find the node and update its content
+          const updateNode = (nodes: FileNode[]): FileNode[] => {
+            return nodes.map(node => {
+              if (node.id === filePath) {
+                return { ...node, content: res.stdout, status: 'unmodified' };
+              }
+              if (node.children) {
+                return { ...node, children: updateNode(node.children) };
+              }
+              return node;
+            });
+          };
+          return { files: updateNode(state.files) };
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch file content:', err);
+    }
+  }
 }));

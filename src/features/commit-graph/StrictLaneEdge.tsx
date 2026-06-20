@@ -1,4 +1,5 @@
 import { BaseEdge, type EdgeProps } from '@xyflow/react';
+import { colorForBranch, GHOST_COLOR } from '../../utils/branchColors';
 
 export function StrictLaneEdge({
   sourceX,
@@ -8,9 +9,18 @@ export function StrictLaneEdge({
   style,
   markerEnd,
   markerStart,
+  data,
 }: EdgeProps) {
   // We want the line to go straight down the source lane until it is close to the target,
   // then curve horizontally to the target lane.
+
+  const bColor = colorForBranch((data as any)?.primaryBranch);
+  const isGhost = (data as any)?.isGhost;
+  
+  const customStyle = {
+    ...style,
+    stroke: isGhost ? GHOST_COLOR.stroke : bColor.stroke
+  };
   
   // The distance before targetY where we start curving
   const curveOffset = 24; 
@@ -36,7 +46,7 @@ export function StrictLaneEdge({
   return (
     <BaseEdge 
       path={path} 
-      style={style} 
+      style={customStyle} 
       markerEnd={markerEnd} 
       markerStart={markerStart}
     />

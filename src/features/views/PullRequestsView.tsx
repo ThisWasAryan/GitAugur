@@ -1,11 +1,11 @@
 import { GitPullRequest, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
-import { usePRStore } from "../../stores/usePRStore";
+
 import { ActionPreviewModal } from "../preview/ActionPreviewModal";
 import { useInspectorStore } from "../../stores/useInspectorStore";
 
 export function PullRequestsView() {
-  const pullRequests = usePRStore(state => state.pullRequests);
+  const pullRequests: any[] = [];
   const [preview, setPreview] = useState<{isOpen: boolean, source: string, target: string}>({ isOpen: false, source: "", target: "" });
   const inspectEntity = useInspectorStore(state => state.inspectEntity);
 
@@ -21,7 +21,7 @@ export function PullRequestsView() {
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
         <div className="divide-y divide-slate-800/50">
-          {pullRequests.map(pr => (
+          {pullRequests.map((pr: any) => (
             <div 
               key={pr.id} 
               className="p-6 hover:bg-slate-800/30 transition-colors cursor-pointer"

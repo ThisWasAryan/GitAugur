@@ -1,4 +1,4 @@
-import { FolderOpen, GitBranch, Sparkles, Loader2 } from "lucide-react";
+import { FolderOpen, GitBranch, Loader2 } from "lucide-react";
 import { useRepositoryStore } from "../../stores/useRepositoryStore";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
@@ -6,6 +6,8 @@ import { useState } from "react";
 
 export function LaunchScreen() {
   const { setRepoPath } = useRepositoryStore();
+
+  const [isOpening, setIsOpening] = useState(false);
 
   const handleOpenRepository = async () => {
     try {
@@ -16,6 +18,8 @@ export function LaunchScreen() {
       });
 
       if (selectedPath && typeof selectedPath === 'string') {
+        setIsOpening(true);
+        await new Promise(resolve => setTimeout(resolve, 50));
         setRepoPath(selectedPath);
       }
     } catch (err) {
@@ -59,6 +63,9 @@ export function LaunchScreen() {
     if (!cloneUrl || !cloneDestPath) return;
     try {
       setIsCloning(true);
+      // Yield to React to paint the loading UI before synchronous backend blocks
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
       const normalizedUrl = normalizeGitUrl(cloneUrl);
       await invoke('git_clone', { url: normalizedUrl, path: cloneDestPath });
       
@@ -70,11 +77,6 @@ export function LaunchScreen() {
       setIsCloning(false);
       alert("Clone failed: " + err);
     }
-  };
-
-  const handleDemoMode = () => {
-    // Special string "demo" indicates we should use mock data
-    setRepoPath("demo");
   };
 
   const resetCloneModal = () => {
@@ -98,8 +100,14 @@ export function LaunchScreen() {
         {/* Open Repository */}
         <div 
           onClick={handleOpenRepository}
-          className="bg-slate-900 border border-slate-800 rounded-xl p-8 cursor-pointer hover:border-blue-500 hover:bg-slate-800/50 transition-all group flex flex-col items-center text-center"
+          className="bg-slate-900 border border-slate-800 rounded-xl p-8 cursor-pointer hover:border-blue-500 hover:bg-slate-800/50 transition-all group flex flex-col items-center text-center relative overflow-hidden"
         >
+          {isOpening && (
+            <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+              <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-3" />
+              <span className="text-sm font-semibold text-white">Opening Repository...</span>
+            </div>
+          )}
           <div className="w-16 h-16 bg-blue-950/50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
             <FolderOpen className="w-8 h-8 text-blue-400" />
           </div>
@@ -126,7 +134,7 @@ export function LaunchScreen() {
 
       {showCloneModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl w-[480px]">
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl w-[480px] relative overflow-hidden">
             <h3 className="text-xl font-semibold text-slate-200 mb-4">Clone Repository</h3>
             <p className="text-slate-400 text-sm mb-4">Enter the Git URL of the repository you want to clone.</p>
             <input 
@@ -175,25 +183,25 @@ export function LaunchScreen() {
                 disabled={!cloneDestPath || isCloning}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded flex items-center gap-2 disabled:opacity-50 transition-colors"
               >
-                {isCloning && <Loader2 className="w-4 h-4 animate-spin" />}
-                {isCloning ? 'Cloning Repository...' : 'Clone'}
+                {isCloning ? 'Cloning...' : 'Clone'}
               </button>
             </div>
+            
+            {isCloning && (
+              <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center z-10">
+                <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+                <h3 className="text-xl font-bold text-white mb-2">Cloning Repository</h3>
+                <p className="text-slate-400 text-sm">This may take a while depending on the repository size...</p>
+                <div className="w-48 h-1.5 bg-slate-800 rounded-full mt-6 overflow-hidden relative">
+                  <div className="absolute inset-y-0 left-0 bg-blue-500 w-1/2 rounded-full animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite] opacity-75"></div>
+                  <div className="absolute inset-y-0 left-0 bg-blue-500 w-1/3 rounded-full animate-pulse"></div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Demo Mode Fallback */}
-      <div className="mt-12 text-center">
-        <p className="text-slate-500 mb-4 text-sm">Don't have a repository ready?</p>
-        <button 
-          onClick={handleDemoMode}
-          className="flex items-center gap-2 mx-auto px-6 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-300 font-medium transition-colors border border-slate-700 hover:border-slate-600 shadow-sm"
-        >
-          <Sparkles className="w-4 h-4 text-amber-400" />
-          Try the Demo Repository
-        </button>
-      </div>
     </div>
   );
 }

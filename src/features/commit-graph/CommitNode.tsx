@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Handle, Position } from "@xyflow/react";
 import type { NodeProps, Node } from "@xyflow/react";
 import type { GitCommit, GitBranch, GitTag } from "../../types/git";
@@ -7,6 +8,7 @@ import { GitBranch as GitBranchIcon, Tag, User } from "lucide-react";
 import type { GraphMode } from "../../stores/useNavigationStore";
 import { useInspectorStore } from "../../stores/useInspectorStore";
 import { useContextMenu } from "../../components/ui/ContextMenu";
+import { colorForBranch, GHOST_COLOR } from "../../utils/branchColors";
 
 export type CommitNodeData = {
   commit: GitCommit;
@@ -14,6 +16,8 @@ export type CommitNodeData = {
   tags: GitTag[];
   lane: number;
   totalLanes: number;
+  primaryBranch: string;
+  laneBranchName?: string;
   mode: GraphMode;
 };
 
@@ -24,17 +28,11 @@ export function CommitNode({ data }: NodeProps<CommitNodeType>) {
   const { inspectEntity } = useInspectorStore();
   const { showMenu } = useContextMenu();
   
-  // Choose a color based on the lane
-  const laneColors = commit.isGhost 
-    ? [{ bg: "bg-slate-700/50", text: "text-slate-400 italic", border: "border-slate-500/50 border-dashed", line: "bg-slate-600/30 dashed" }]
-    : [
-      { bg: "bg-blue-500", text: "text-blue-400", border: "border-blue-500/30", line: "bg-blue-500/20" },
-      { bg: "bg-purple-500", text: "text-purple-400", border: "border-purple-500/30", line: "bg-purple-500/20" },
-      { bg: "bg-green-500", text: "text-green-400", border: "border-green-500/30", line: "bg-green-500/20" },
-      { bg: "bg-orange-500", text: "text-orange-400", border: "border-orange-500/30", line: "bg-orange-500/20" },
-      { bg: "bg-pink-500", text: "text-pink-400", border: "border-pink-500/30", line: "bg-pink-500/20" }
-    ];
-  const colorSet = laneColors[commit.isGhost ? 0 : (lane % laneColors.length)];
+  // Choose a color based on the branch lineage
+  const colorSet = useMemo(() => {
+    if (commit.isGhost) return GHOST_COLOR;
+    return colorForBranch(data.laneBranchName || data.primaryBranch || '');
+  }, [commit.isGhost, data.laneBranchName, data.primaryBranch]);
 
   // Width of one lane is 24px (from graphLayout LANE_WIDTH for GIT_GRAPH).
   // Total lanes padding to push text to the right.
@@ -77,12 +75,14 @@ export function CommitNode({ data }: NodeProps<CommitNodeType>) {
         {/* Branches and Tags */}
         {(branches.length > 0 || tags.length > 0) && (
           <div className="flex items-center gap-1">
-            {branches.map(b => (
-              <span key={b.name} className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-0.5 ${b.isCurrent ? 'bg-blue-900/50 text-blue-400 border border-blue-800' : b.isRemote ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-emerald-900/50 text-emerald-400 border border-emerald-800'}`}>
+            {branches.map(b => {
+              const bColor = colorForBranch(b.isRemote ? b.name.replace('origin/', '') : b.name);
+              return (
+              <span key={b.name} className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-0.5 border ${b.isCurrent ? 'border-blue-400 ring-1 ring-blue-400' : bColor.border} ${bColor.text} ${bColor.bg.replace('bg-', 'bg-opacity-20 bg-')}`}>
                 <GitBranchIcon className="w-2.5 h-2.5" />
                 {b.name}
               </span>
-            ))}
+            )})}
             {tags.map(t => (
               <span key={t.name} className="px-1.5 py-0.5 rounded bg-amber-900/50 text-amber-400 border border-amber-800 text-[10px] font-medium flex items-center gap-0.5">
                 <Tag className="w-2.5 h-2.5" />

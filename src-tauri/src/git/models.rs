@@ -46,6 +46,7 @@ pub struct FileStatus {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GitHistoryData {
+    pub head: String,
     pub commits: Vec<GitCommit>,
     pub branches: Vec<GitBranch>,
     pub tags: Vec<GitTag>,
@@ -53,4 +54,6 @@ pub struct GitHistoryData {
     pub staged_files: Vec<FileStatus>,
     #[serde(rename = "unstagedFiles")]
     pub unstaged_files: Vec<FileStatus>,
+    #[serde(rename = "repositoryState")]
+    pub repository_state: String,
 }

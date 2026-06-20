@@ -7,7 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useState, useEffect } from "react";
 
 export function CommitInspector() {
-  const { history } = useGitEngineStore();
+  const { history, selectCommitFile, selectedFile } = useGitEngineStore();
   const { inspectedEntityId, showStaging } = useInspectorStore();
   const { repoPath } = useRepositoryStore();
 
@@ -17,7 +17,7 @@ export function CommitInspector() {
   const commit = history.commits.find(c => c.hash === inspectedEntityId);
 
   useEffect(() => {
-    if (commit && repoPath && repoPath !== 'demo') {
+    if (commit && repoPath) {
       setIsLoading(true);
       invoke('git_commit_details', { repoPath, commitHash: commit.hash })
         .then((res: any) => {
@@ -122,8 +122,12 @@ export function CommitInspector() {
           </h4>
           <div className="space-y-4">
             {files.map((file: any) => (
-              <div key={file.path} className="border border-slate-800 rounded-lg overflow-hidden">
-                <div className="bg-slate-950 px-3 py-2 text-xs font-mono text-slate-300 flex justify-between items-center">
+              <div 
+                key={file.path} 
+                onClick={() => selectCommitFile(commit.hash, file.path)}
+                className={`border rounded-lg overflow-hidden cursor-pointer transition-colors ${selectedFile === file.path ? 'border-amber-500/50' : 'border-slate-800 hover:border-slate-600'}`}
+              >
+                <div className={`px-3 py-2 text-xs font-mono text-slate-300 flex justify-between items-center ${selectedFile === file.path ? 'bg-amber-950/20' : 'bg-slate-950'}`}>
                   <span>{file.path}</span>
                   <span className={`px-1.5 py-0.5 rounded ${file.status === 'added' ? 'text-emerald-400 bg-emerald-950/50' : file.status === 'deleted' ? 'text-rose-400 bg-rose-950/50' : 'text-amber-400 bg-amber-950/50'}`}>
                     {file.status}

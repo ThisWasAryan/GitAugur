@@ -13,44 +13,38 @@ export function RepoFlowView() {
 
   const selectedBranch = branches.find(b => b.name === selectedBranchName);
 
+  const handleDragStart = (e: React.DragEvent, branchName: string) => {
+    e.dataTransfer.setData('application/x-git-branch', branchName);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetBranchName: string) => {
+    e.preventDefault();
+    const sourceBranchName = e.dataTransfer.getData('application/x-git-branch');
+    if (sourceBranchName && sourceBranchName !== targetBranchName) {
+      if (window.confirm(`Rebase '${sourceBranchName}' onto '${targetBranchName}'?`)) {
+        // We must switch to the source branch first before rebasing onto the target branch
+        const { checkout, rebase } = useGitEngineStore.getState();
+        await checkout(sourceBranchName);
+        await rebase(targetBranchName);
+      }
+    }
+  };
+
   // Helper to compute ahead/behind using DAG
   const getBranchMetrics = (branchName: string) => {
     const branch = branches.find(b => b.name === branchName);
     if (!branch || !mainBranch || branchName === 'main') return { ahead: 0, behind: 0, lastCommitTime: 'Unknown' };
 
     const branchCommit = history.commits.find(c => c.hash === branch.commitHash);
-
     const lastCommitTime = branchCommit ? new Date(branchCommit.timestamp).toLocaleDateString() : 'Unknown';
 
-    // Simple DAG traversal: Find ancestors
-    const getAncestors = (startHash: string) => {
-      const ancestors = new Set<string>();
-      const queue = [startHash];
-      while (queue.length > 0) {
-        const hash = queue.shift()!;
-        if (!ancestors.has(hash)) {
-          ancestors.add(hash);
-          const commit = history.commits.find(c => c.hash === hash);
-          if (commit) queue.push(...commit.parentHashes);
-        }
-      }
-      return ancestors;
-    };
-
-    const branchAncestors = getAncestors(branch.commitHash);
-    const mainAncestors = getAncestors(mainBranch.commitHash);
-
-    let ahead = 0;
-    branchAncestors.forEach(hash => {
-      if (!mainAncestors.has(hash)) ahead++;
-    });
-
-    let behind = 0;
-    mainAncestors.forEach(hash => {
-      if (!branchAncestors.has(hash)) behind++;
-    });
-
-    return { ahead, behind, lastCommitTime };
+    return { ahead: branch.ahead || 0, behind: branch.behind || 0, lastCommitTime };
   };
 
   const renderTreeItem = (branch: typeof branches[0], isLast: boolean) => {
@@ -69,8 +63,12 @@ export function RepoFlowView() {
 
         {/* Branch Card */}
         <div 
+          draggable
+          onDragStart={(e) => handleDragStart(e, branch.name)}
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, branch.name)}
           onClick={() => setSelectedBranchName(branch.name)}
-          className={`mt-2 mb-4 p-4 rounded-xl border flex-1 cursor-pointer transition-all ${
+          className={`mt-2 mb-4 p-4 rounded-xl border flex-1 cursor-grab active:cursor-grabbing transition-all ${
             isSelected ? 'bg-blue-950/20 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.1)]' : 'bg-slate-900 border-slate-800 hover:border-slate-700'
           }`}
         >
@@ -134,8 +132,12 @@ export function RepoFlowView() {
             {/* Main Branch Root */}
             {mainBranch && (
               <div 
+                draggable
+                onDragStart={(e) => handleDragStart(e, 'main')}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, 'main')}
                 onClick={() => setSelectedBranchName('main')}
-                className={`flex items-center gap-3 p-4 rounded-xl border mb-2 cursor-pointer transition-all ${
+                className={`flex items-center gap-3 p-4 rounded-xl border mb-2 cursor-grab active:cursor-grabbing transition-all ${
                   selectedBranchName === 'main' ? 'bg-blue-950/20 border-blue-500/50' : 'bg-slate-900 border-slate-800 hover:border-slate-700'
                 }`}
               >

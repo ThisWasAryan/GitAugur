@@ -1,9 +1,12 @@
 import { FolderGit2, FileCode2, FileJson, FileText, ChevronRight, ChevronDown, SplitSquareHorizontal } from "lucide-react";
 import { useFileStore, type FileNode } from "../../stores/useFileStore";
 import { useContextMenu } from "../../components/ui/ContextMenu";
+import { useEffect } from "react";
+import { useRepositoryStore } from "../../stores/useRepositoryStore";
 
 export function FilesView() {
-  const { files, activeFileId, setActiveFile, toggleFolder } = useFileStore();
+  const { files, activeFileId, setActiveFile, toggleFolder, fetchFileContent } = useFileStore();
+  const repoPath = useRepositoryStore(state => state.repoPath);
   const { showMenu } = useContextMenu();
 
   const getActiveFileContent = (nodes: FileNode[], targetId: string): FileNode | null => {
@@ -18,6 +21,12 @@ export function FilesView() {
   };
 
   const activeFile = activeFileId ? getActiveFileContent(files, activeFileId) : null;
+
+  useEffect(() => {
+    if (activeFileId && activeFile && !activeFile.content && activeFile.status !== 'modified' && repoPath) {
+      fetchFileContent(repoPath, activeFileId);
+    }
+  }, [activeFileId, activeFile, repoPath, fetchFileContent]);
 
   const getFileIcon = (name: string, isIgnored?: boolean) => {
     if (name.endsWith('.tsx') || name.endsWith('.ts')) return <FileCode2 className={`w-4 h-4 ${isIgnored ? 'text-slate-600' : 'text-blue-400'}`} />;

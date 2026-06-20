@@ -1,7 +1,8 @@
 {
-  "name": "tmp_ui",
+  "name": "git-augur",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "author": "Aryan",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -20,6 +21,7 @@
     "lucide-react": "^1.21.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
     "zustand": "^5.0.14"

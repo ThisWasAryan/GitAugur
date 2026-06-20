@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# GitAugur project specific
+docs/
+test-dialog.mjs
+src/mockTauriBackend.js

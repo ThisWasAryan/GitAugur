@@ -1,18 +1,15 @@
 import { useGitEngineStore } from "../../engine/GitEngineStore";
 import { useInspectorStore } from "../../stores/useInspectorStore";
-import { useBranchStore } from "../../stores/useBranchStore";
 import { X, GitBranch, ArrowUp, ArrowDown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export function BranchInspector() {
-  const { history } = useGitEngineStore();
   const { inspectedEntityId, showStaging } = useInspectorStore();
-  const { branches } = useBranchStore();
+  const { history } = useGitEngineStore();
 
-  const branch = history.branches.find(b => b.name === inspectedEntityId);
-  const branchData = branches.find(b => b.name === inspectedEntityId);
+  const branchData = history.branches.find(b => b.name === inspectedEntityId);
 
-  if (!branch) {
+  if (!branchData) {
     return (
       <div className="w-80 h-full bg-slate-900 border-l border-slate-800 flex flex-col shrink-0 p-4">
         <div className="text-slate-400">Branch not found.</div>
@@ -21,7 +18,7 @@ export function BranchInspector() {
     );
   }
 
-  const targetCommit = history.commits.find(c => c.hash === branch.commitHash);
+  const targetCommit = history.commits.find(c => c.hash === branchData.commitHash);
 
   return (
     <div className="w-[400px] h-full bg-slate-900 border-l border-slate-800 flex flex-col shrink-0">
@@ -43,9 +40,9 @@ export function BranchInspector() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="bg-emerald-900/30 text-emerald-400 border border-emerald-800/50 px-2 py-0.5 rounded text-xs">
-              {branch.name}
+              {branchData.name}
             </span>
-            {branch.isCurrent && (
+            {branchData.isCurrent && (
               <span className="bg-blue-900/30 text-blue-400 border border-blue-800/50 px-2 py-0.5 rounded text-xs">
                 Current
               </span>
@@ -60,7 +57,7 @@ export function BranchInspector() {
         <div className="flex items-center gap-6 text-sm bg-slate-950 p-4 rounded-lg border border-slate-800">
           <div className="flex flex-col items-center gap-1">
             <ArrowUp className="w-5 h-5 text-emerald-400" />
-            <span className="font-medium text-slate-200">{branchData?.ahead || 0} Ahead</span>
+            <span className="font-medium text-slate-200">{branchData?.isRemote ? 'Remote' : 'Local'}</span>
           </div>
           <div className="w-px h-8 bg-slate-800"></div>
           <div className="flex flex-col items-center gap-1">

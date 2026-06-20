@@ -1,7 +1,42 @@
 import { Shield, Key, Sparkles, Sliders } from "lucide-react";
 import { useSettingsStore } from "../../stores/useSettingsStore";
+import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { useRepositoryStore } from "../../stores/useRepositoryStore";
+import { toast } from "sonner";
 
 export function SettingsView() {
+  const { repoPath } = useRepositoryStore();
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  
+  useEffect(() => {
+    async function loadConfig() {
+      if (!repoPath) return;
+      try {
+        const nameRes: any = await invoke('git_exec', { repoPath, args: ['config', 'user.name'] });
+        const emailRes: any = await invoke('git_exec', { repoPath, args: ['config', 'user.email'] });
+        
+        if (nameRes.stdout) setUserName(nameRes.stdout.trim());
+        if (emailRes.stdout) setUserEmail(emailRes.stdout.trim());
+      } catch (err) {
+        console.error("Failed to load config", err);
+      }
+    }
+    loadConfig();
+  }, [repoPath]);
+
+  const handleSaveConfig = async () => {
+    if (!repoPath) return;
+    try {
+      await invoke('git_exec', { repoPath, args: ['config', 'user.name', userName] });
+      await invoke('git_exec', { repoPath, args: ['config', 'user.email', userEmail] });
+      toast.success("User configuration saved");
+    } catch (err) {
+      toast.error("Failed to save configuration");
+    }
+  };
+
   const { 
     uiMode, 
     setUiMode, 
@@ -17,6 +52,39 @@ export function SettingsView() {
         <h1 className="text-3xl font-bold text-slate-100 mb-2">Settings</h1>
         <p className="text-slate-400 mb-8">Configure GitAugur's behavior, terminology, and security features.</p>
         
+        {/* User Configuration */}
+        <section className="mb-12">
+          <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
+            <Shield className="w-5 h-5 text-blue-400" />
+            Git Configuration
+          </h2>
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-2">Name</label>
+                <input 
+                  type="text" 
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-blue-500"
+                  placeholder="e.g. John Doe"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-2">Email</label>
+                <input 
+                  type="email" 
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-blue-500"
+                  placeholder="e.g. john@example.com"
+                />
+              </div>
+            </div>
+            <button onClick={handleSaveConfig} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded shadow transition-colors text-sm font-medium">Save Configuration</button>
+          </div>
+        </section>
+
         {/* UI Mode Settings */}
         <section className="mb-12">
           <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">

@@ -22,6 +22,7 @@ import { useNavigationStore } from "./stores/useNavigationStore";
 import { useLayoutStore } from "./stores/useLayoutStore";
 import { useGitEngineStore } from "./engine/GitEngineStore";
 import { useEffect } from "react";
+import { Toaster } from "sonner";
 
 import { MenuBar } from "./components/layout/MenuBar";
 import { LaunchScreen } from "./features/launch/LaunchScreen";
@@ -32,9 +33,12 @@ import { Loader2 } from "lucide-react";
 function App() {
   const repoPath = useRepositoryStore(state => state.repoPath);
   const currentState = useRepositoryStore(state => state.currentState);
-  const toggleMergeState = useRepositoryStore(state => state.toggleMergeState);
-  const { fetchRepoState, selectedFile, selectedFileDiff, clearSelection } = useGitEngineStore();
+  const { fetchRepoState, selectedFile, selectedFileDiff, selectedFileIsStaged, clearSelection, history, HEAD, stageHunk, unstageHunk } = useGitEngineStore();
   const { activeView, graphMode, setGraphMode } = useNavigationStore();
+
+  const currentBranch = history.branches.find(b => b.name === HEAD);
+  const aheadCount = currentBranch?.ahead || 0;
+  const behindCount = currentBranch?.behind || 0;
 
   const { leftSidebarOpen, rightSidebarOpen, toggleLeftSidebar, toggleRightSidebar } = useLayoutStore();
   const operations = useOperationStore(state => state.operations);
@@ -46,6 +50,21 @@ function App() {
       fetchRepoState(repoPath);
     }
   }, [repoPath, fetchRepoState]);
+
+  // Real-time repository monitoring (only on window focus)
+  useEffect(() => {
+    if (!repoPath) return;
+    
+    const handleFocus = () => {
+      useGitEngineStore.getState().fetchRepoState(repoPath);
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [repoPath]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -96,7 +115,13 @@ function App() {
                 </button>
               </div>
               <div className="flex-1 overflow-hidden">
-                <DiffViewer diff={selectedFileDiff || ''} filename={selectedFile} />
+                {selectedFileDiff === null ? (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+                  </div>
+                ) : (
+                  <DiffViewer diff={selectedFileDiff || ''} filename={selectedFile} onStageHunk={stageHunk} onUnstageHunk={unstageHunk} isStaged={selectedFileIsStaged} />
+                )}
               </div>
             </div>
           );
@@ -122,7 +147,7 @@ function App() {
         <MenuBar />
         <div className="flex flex-1 min-h-0">
           {leftSidebarOpen && <Sidebar />}
-        <main className="flex-1 flex flex-col min-w-0">
+        <main className="flex-1 flex flex-col min-w-0 min-h-0">
           {/* Expanded Top Header */}
           <header className="h-14 border-b border-slate-800 flex items-center justify-between px-4 z-10 bg-slate-950/80 backdrop-blur shrink-0">
             <div className="flex items-center gap-2">
@@ -140,17 +165,21 @@ function App() {
 
               {/* Ahead/Behind Sync Status */}
               <div className="flex items-center gap-3 text-xs font-medium">
-                <span className="flex items-center gap-1 text-emerald-400 bg-emerald-950/50 px-2 py-1 rounded">
+                <span className={`flex items-center gap-1 px-2 py-1 rounded ${aheadCount > 0 ? 'text-emerald-400 bg-emerald-950/50' : 'text-slate-500'}`}>
                   <ArrowUp className="w-3 h-3" />
-                  1 Ahead
+                  {aheadCount} Ahead
                 </span>
-                <span className="flex items-center gap-1 text-slate-400">
+                <span className={`flex items-center gap-1 ${behindCount > 0 ? 'text-rose-400' : 'text-slate-500'}`}>
                   <ArrowDown className="w-3 h-3" />
-                  0 Behind
+                  {behindCount} Behind
                 </span>
-                <button className="flex items-center gap-1.5 text-slate-400 hover:text-slate-200 ml-2 transition-colors">
+                <button 
+                  onClick={() => repoPath && fetchRepoState(repoPath)}
+                  title="If recent changes are not visible yet, press Refresh."
+                  className="flex items-center gap-1.5 text-slate-400 hover:text-slate-200 ml-2 transition-colors"
+                >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  Fetch origin
+                  Refresh Repository
                 </button>
               </div>
             </div>
@@ -182,12 +211,7 @@ function App() {
                 </div>
               )}
 
-              <button 
-                onClick={toggleMergeState}
-                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs text-slate-300 transition-colors"
-              >
-                Toggle Demo Conflict
-              </button>
+
               {isMerging ? (
                 <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400 bg-rose-950/30 px-2 py-1 rounded border border-rose-900/50">
                   <AlertTriangle className="w-4 h-4 text-rose-500" />
@@ -249,6 +273,7 @@ function App() {
           </footer>
         </main>
         </div>
+        <Toaster theme="dark" position="bottom-right" richColors />
       </div>
     </ContextMenuProvider>
   );

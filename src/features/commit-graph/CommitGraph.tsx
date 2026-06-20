@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import {
   ReactFlow,
   Controls,
@@ -6,12 +6,14 @@ import {
   useNodesState,
   useEdgesState,
   Panel,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import type { NodeTypes } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import { CommitNode } from "./CommitNode";
 import { buildGraphLayout } from "../../utils/graphLayout";
+import { useRepositoryStore } from "../../stores/useRepositoryStore";
 import { useNavigationStore } from "../../stores/useNavigationStore";
 import { useGitEngineStore } from "../../engine/GitEngineStore";
 import { StrictLaneEdge } from "./StrictLaneEdge";
@@ -25,8 +27,11 @@ const edgeTypes = {
 };
 
 export function CommitGraph() {
+  const repoPath = useRepositoryStore(state => state.repoPath);
   const graphMode = useNavigationStore(state => state.graphMode);
   const { history, preview } = useGitEngineStore();
+
+  const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
 
   const layout = useMemo(() => {
     return buildGraphLayout(history, preview);
@@ -40,6 +45,12 @@ export function CommitGraph() {
     setEdges(layout.edges);
   }, [layout, setNodes, setEdges]);
 
+  useEffect(() => {
+    if (rfInstance) {
+      rfInstance.setViewport({ x: 50, y: 50, zoom: 1 });
+    }
+  }, [repoPath, rfInstance]);
+
   return (
     <div className="absolute inset-0 bg-slate-950">
       <ReactFlow
@@ -49,9 +60,8 @@ export function CommitGraph() {
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.5}
+        onInit={setRfInstance}
+        minZoom={0.1}
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
         nodesDraggable={false}
@@ -62,7 +72,6 @@ export function CommitGraph() {
         <Controls className="bg-slate-900 border-slate-800 fill-slate-300" />
         <Panel position="top-right" className="bg-slate-900/80 backdrop-blur border border-slate-800 p-3 rounded-lg shadow-xl text-sm">
           <h3 className="font-semibold text-slate-200 mb-1">Git Repository State</h3>
-          <p className="text-slate-400">Mock Data Visualization Mode</p>
         </Panel>
       </ReactFlow>
     </div>

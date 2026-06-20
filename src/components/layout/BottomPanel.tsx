@@ -1,4 +1,4 @@
-import { X, Terminal as TerminalIcon, History, Play, AlertCircle, CheckCircle2 } from "lucide-react";
+import { X, Terminal as TerminalIcon, History, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useOperationStore } from "../../stores/useOperationStore";
 import { format } from "date-fns";
 import { useState, useRef, useEffect } from "react";
@@ -32,7 +32,7 @@ export function BottomPanel() {
         return;
       }
 
-      if (!repoPath || repoPath === 'demo') {
+      if (!repoPath) {
         setTerminalOutput(prev => [...prev, { type: 'stderr', text: 'Error: No repository opened.' }]);
         return;
       }

@@ -1,148 +1,311 @@
-import { FileWarning, Info, GitBranch, Check, AlertTriangle, GitMerge } from "lucide-react";
+import { useEffect, useState } from "react";
+import { FileWarning, GitBranch, Check, AlertTriangle } from "lucide-react";
 import { useRepositoryStore } from "../../stores/useRepositoryStore";
+import { invoke } from '@tauri-apps/api/core';
+import { useGitEngineStore } from "../../engine/GitEngineStore";
+
+interface ConflictBlock {
+  id: string;
+  startIndex: number;
+  endIndex: number;
+  currentContent: string[];
+  incomingContent: string[];
+  currentBranch: string;
+  incomingBranch: string;
+  resolvedWith?: 'current' | 'incoming' | 'both';
+}
 
 export function ConflictResolutionView() {
-  const toggleMergeState = useRepositoryStore(state => state.toggleMergeState);
+  const repoPath = useRepositoryStore(state => state.repoPath);
+  const unstagedFiles = useGitEngineStore(state => state.unstagedFiles);
+  const fetchRepoState = useGitEngineStore(state => state.fetchRepoState);
+  
+  const [activeConflictFile, setActiveConflictFile] = useState<string | null>(null);
+  const [conflictBlocks, setConflictBlocks] = useState<ConflictBlock[]>([]);
+  const [rawLines, setRawLines] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  const conflictedFiles = unstagedFiles.filter(f => f.status === 'conflicted');
+
+  useEffect(() => {
+    if (conflictedFiles.length > 0 && !activeConflictFile) {
+      setActiveConflictFile(conflictedFiles[0].path);
+    } else if (conflictedFiles.length === 0) {
+      setActiveConflictFile(null);
+    }
+  }, [conflictedFiles, activeConflictFile]);
+
+  useEffect(() => {
+    if (repoPath && activeConflictFile) {
+      loadFile(repoPath, activeConflictFile);
+    }
+  }, [repoPath, activeConflictFile]);
+
+  const loadFile = async (repo: string, file: string) => {
+    try {
+      const content: string = await invoke('read_file_content', { repoPath: repo, filePath: file });
+      parseConflicts(content);
+    } catch (e) {
+      console.error("Failed to read conflicted file", e);
+    }
+  };
+
+  const parseConflicts = (content: string) => {
+    const lines = content.split('\n');
+    setRawLines(lines);
+    const blocks: ConflictBlock[] = [];
+    let i = 0;
+    
+    while (i < lines.length) {
+      if (lines[i].startsWith('<<<<<<<')) {
+        const startIndex = i;
+        const currentBranch = lines[i].substring(7).trim();
+        i++;
+        const currentContent = [];
+        while (i < lines.length && !lines[i].startsWith('=======')) {
+          currentContent.push(lines[i]);
+          i++;
+        }
+        i++; // skip =======
+        const incomingContent = [];
+        while (i < lines.length && !lines[i].startsWith('>>>>>>>')) {
+          incomingContent.push(lines[i]);
+          i++;
+        }
+        const incomingBranch = lines[i] ? lines[i].substring(7).trim() : 'Incoming';
+        const endIndex = i;
+        i++; // skip >>>>>>>
+        
+        blocks.push({
+          id: Math.random().toString(),
+          startIndex,
+          endIndex,
+          currentContent,
+          incomingContent,
+          currentBranch,
+          incomingBranch
+        });
+      } else {
+        i++;
+      }
+    }
+    
+    setConflictBlocks(blocks);
+  };
+
+  const resolveBlock = (id: string, choice: 'current' | 'incoming' | 'both') => {
+    setConflictBlocks(prev => prev.map(b => b.id === id ? { ...b, resolvedWith: choice } : b));
+  };
+
+  const handleSaveResolution = async () => {
+    if (!repoPath || !activeConflictFile) return;
+    
+    // Check if all resolved
+    if (conflictBlocks.some(b => !b.resolvedWith)) {
+      alert("Please resolve all conflicts before saving.");
+      return;
+    }
+    
+    setSaving(true);
+    
+    try {
+      // Reconstruct file
+      const finalLines: string[] = [];
+      let currentLine = 0;
+      
+      for (const block of conflictBlocks) {
+        // Add lines before this block
+        while (currentLine < block.startIndex) {
+          finalLines.push(rawLines[currentLine]);
+          currentLine++;
+        }
+        
+        // Add resolved lines
+        if (block.resolvedWith === 'current') {
+          finalLines.push(...block.currentContent);
+        } else if (block.resolvedWith === 'incoming') {
+          finalLines.push(...block.incomingContent);
+        } else if (block.resolvedWith === 'both') {
+          finalLines.push(...block.currentContent);
+          finalLines.push(...block.incomingContent);
+        }
+        
+        currentLine = block.endIndex + 1; // skip marker
+      }
+      
+      // Add remaining lines
+      while (currentLine < rawLines.length) {
+        finalLines.push(rawLines[currentLine]);
+        currentLine++;
+      }
+      
+      const newContent = finalLines.join('\n');
+      
+      // Write back
+      await invoke('write_file_content', { repoPath, filePath: activeConflictFile, content: newContent });
+      
+      // Stage the resolved file
+      await invoke('git_add', { repoPath, files: [activeConflictFile] });
+      
+      // Refresh state
+      await fetchRepoState(repoPath);
+      
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAbortMerge = async () => {
+    if (repoPath) {
+      try {
+        await invoke('git_exec', { repoPath, args: ['merge', '--abort'] });
+        fetchRepoState(repoPath);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  if (!activeConflictFile) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-slate-950 text-slate-400">
+        <p>No conflicted files to display.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-full h-full bg-slate-950">
       
       {/* Left Area: The Resolution Editor */}
-      <div className="flex-1 flex flex-col border-r border-slate-800">
+      <div className="flex-1 flex flex-col border-r border-slate-800 min-w-0">
         <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-slate-200 flex items-center gap-2">
               <FileWarning className="w-5 h-5 text-rose-500" />
-              Resolving Conflict in <span className="font-mono text-blue-400 bg-blue-950/50 px-2 py-0.5 rounded">src/utils/graphLayout.ts</span>
+              Resolving Conflict in <span className="font-mono text-blue-400 bg-blue-950/50 px-2 py-0.5 rounded truncate max-w-sm" title={activeConflictFile}>{activeConflictFile}</span>
             </h2>
-            <p className="text-slate-400 mt-2 text-sm">Review both versions and select which code to keep.</p>
+            <p className="text-slate-400 mt-2 text-sm">Review both versions and select which code to keep. ({conflictBlocks.filter(b => b.resolvedWith).length} / {conflictBlocks.length} resolved)</p>
           </div>
-          <button 
-            onClick={toggleMergeState}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-medium text-sm transition-colors border border-slate-700"
-          >
-            Abort Merge
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleAbortMerge}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-medium text-sm transition-colors border border-slate-700"
+            >
+              Abort Merge
+            </button>
+            <button 
+              onClick={handleSaveResolution}
+              disabled={conflictBlocks.some(b => !b.resolvedWith) || saving}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-900/20"
+            >
+              {saving ? 'Saving...' : 'Mark as Resolved'}
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 p-6 overflow-y-auto bg-slate-950">
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="max-w-4xl mx-auto space-y-12">
             
-            {/* Version 1: The target branch */}
-            <div className="border border-emerald-900/50 rounded-xl overflow-hidden shadow-lg">
-              <div className="bg-emerald-950/40 p-4 border-b border-emerald-900/50 flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-emerald-400 flex items-center gap-2">
-                    <GitBranch className="w-4 h-4" />
-                    Changes from <span className="font-mono bg-emerald-900/50 px-1.5 rounded">main</span>
-                  </h3>
-                  <p className="text-xs text-emerald-500/70 mt-1">This is the code currently on the target branch.</p>
+            {conflictBlocks.map((block, idx) => (
+              <div key={block.id} className="space-y-6 opacity-100 transition-opacity">
+                <div className="text-sm font-medium text-slate-500 mb-2">Conflict #{idx + 1}</div>
+                
+                {/* Current Branch */}
+                <div className={`border rounded-xl overflow-hidden shadow-lg transition-colors ${block.resolvedWith === 'current' || block.resolvedWith === 'both' ? 'border-emerald-500 ring-2 ring-emerald-500/20' : block.resolvedWith ? 'border-slate-800 opacity-50' : 'border-emerald-900/50'}`}>
+                  <div className={`p-4 border-b flex items-center justify-between transition-colors ${block.resolvedWith === 'current' || block.resolvedWith === 'both' ? 'bg-emerald-900/40 border-emerald-500/50' : 'bg-emerald-950/40 border-emerald-900/50'}`}>
+                    <div>
+                      <h3 className="font-semibold text-emerald-400 flex items-center gap-2">
+                        <GitBranch className="w-4 h-4" />
+                        Current Change <span className="font-mono bg-emerald-900/50 px-1.5 rounded text-xs">{block.currentBranch || 'HEAD'}</span>
+                      </h3>
+                    </div>
+                    <button 
+                      onClick={() => resolveBlock(block.id, 'current')}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-emerald-900/20 flex items-center gap-2"
+                    >
+                      <Check className="w-4 h-4" /> Accept Current
+                    </button>
+                  </div>
+                  <div className="p-4 font-mono text-sm bg-slate-950 overflow-x-auto whitespace-pre">
+                    {block.currentContent.map((line, i) => (
+                      <div key={i} className="text-emerald-300 py-0.5 px-2 rounded hover:bg-emerald-900/20">{line || ' '}</div>
+                    ))}
+                    {block.currentContent.length === 0 && <div className="text-slate-600 italic">Empty</div>}
+                  </div>
                 </div>
-                <button className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-emerald-900/20 flex items-center gap-2">
-                  <Check className="w-4 h-4" /> Keep This Version
-                </button>
-              </div>
-              <div className="p-4 font-mono text-sm bg-slate-950">
-                <div className="text-slate-500">{'export function buildGraphLayout(history: GitHistory) {'}</div>
-                <div className="text-slate-500">{'  const nodes: Node[] = [];'}</div>
-                <div className="bg-emerald-900/20 text-emerald-300 py-1 px-2 rounded">{'  const edges: Edge[] = [];'}</div>
-                <div className="bg-emerald-900/20 text-emerald-300 py-1 px-2 rounded mt-1">{'  const LANE_WIDTH = 20;'}</div>
-                <div className="bg-emerald-900/20 text-emerald-300 py-1 px-2 rounded mt-1">{'  const Y_SPACING = 40;'}</div>
-                <div className="text-slate-500 mt-1">{'  // Sort commits newest first'}</div>
-              </div>
-            </div>
 
-            <div className="flex items-center justify-center relative">
-              <div className="absolute w-full h-px bg-slate-800"></div>
-              <span className="bg-slate-950 text-slate-500 px-4 text-xs font-bold tracking-widest uppercase relative z-10">OR</span>
-            </div>
-
-            {/* Version 2: The source branch */}
-            <div className="border border-blue-900/50 rounded-xl overflow-hidden shadow-lg">
-              <div className="bg-blue-950/40 p-4 border-b border-blue-900/50 flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-blue-400 flex items-center gap-2">
-                    <GitBranch className="w-4 h-4" />
-                    Changes from <span className="font-mono bg-blue-900/50 px-1.5 rounded">feature/graph-rework</span>
-                  </h3>
-                  <p className="text-xs text-blue-500/70 mt-1">This is the code you are trying to merge in.</p>
+                <div className="flex items-center justify-center relative">
+                  <div className="absolute w-full h-px bg-slate-800"></div>
+                  <button 
+                    onClick={() => resolveBlock(block.id, 'both')}
+                    className={`px-4 py-1 text-xs font-bold tracking-widest uppercase relative z-10 rounded-full transition-colors ${block.resolvedWith === 'both' ? 'bg-purple-600 text-white' : 'bg-slate-900 text-slate-400 border border-slate-700 hover:bg-slate-800'}`}
+                  >
+                    Accept Both
+                  </button>
                 </div>
-                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-900/20 flex items-center gap-2">
-                  <Check className="w-4 h-4" /> Keep This Version
-                </button>
+
+                {/* Incoming Branch */}
+                <div className={`border rounded-xl overflow-hidden shadow-lg transition-colors ${block.resolvedWith === 'incoming' || block.resolvedWith === 'both' ? 'border-blue-500 ring-2 ring-blue-500/20' : block.resolvedWith ? 'border-slate-800 opacity-50' : 'border-blue-900/50'}`}>
+                  <div className={`p-4 border-b flex items-center justify-between transition-colors ${block.resolvedWith === 'incoming' || block.resolvedWith === 'both' ? 'bg-blue-900/40 border-blue-500/50' : 'bg-blue-950/40 border-blue-900/50'}`}>
+                    <div>
+                      <h3 className="font-semibold text-blue-400 flex items-center gap-2">
+                        <GitBranch className="w-4 h-4" />
+                        Incoming Change <span className="font-mono bg-blue-900/50 px-1.5 rounded text-xs">{block.incomingBranch}</span>
+                      </h3>
+                    </div>
+                    <button 
+                      onClick={() => resolveBlock(block.id, 'incoming')}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-900/20 flex items-center gap-2"
+                    >
+                      <Check className="w-4 h-4" /> Accept Incoming
+                    </button>
+                  </div>
+                  <div className="p-4 font-mono text-sm bg-slate-950 overflow-x-auto whitespace-pre">
+                    {block.incomingContent.map((line, i) => (
+                      <div key={i} className="text-blue-300 py-0.5 px-2 rounded hover:bg-blue-900/20">{line || ' '}</div>
+                    ))}
+                    {block.incomingContent.length === 0 && <div className="text-slate-600 italic">Empty</div>}
+                  </div>
+                </div>
+
               </div>
-              <div className="p-4 font-mono text-sm bg-slate-950">
-                <div className="text-slate-500">{'export function buildGraphLayout(history: GitHistory) {'}</div>
-                <div className="text-slate-500">{'  const nodes: Node[] = [];'}</div>
-                <div className="bg-blue-900/20 text-blue-300 py-1 px-2 rounded">{'  const edges: Edge[] = [];'}</div>
-                <div className="bg-blue-900/20 text-blue-300 py-1 px-2 rounded mt-1">{'  const maxLanes = calculateLanes(history);'}</div>
-                <div className="text-slate-500 mt-1">{'  // Sort commits newest first'}</div>
+            ))}
+            
+            {conflictBlocks.length === 0 && (
+              <div className="text-center py-12 text-slate-500">
+                <Check className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-slate-300 mb-2">No standard conflict markers found</h3>
+                <p>This file might be a binary file or has a conflict not represented by standard &lt;&lt;&lt;&lt;&lt;&lt;&lt; blocks.</p>
               </div>
-            </div>
+            )}
 
           </div>
         </div>
       </div>
 
-      {/* Right Area: Educational Context */}
-      <div className="w-[400px] bg-slate-900/50 shrink-0 flex flex-col overflow-y-auto custom-scrollbar">
-        <div className="p-6 border-b border-slate-800">
-          <h3 className="font-bold text-slate-200 text-lg flex items-center gap-2">
-            <Info className="w-5 h-5 text-blue-500" />
-            Conflict Analysis
+      {/* Right Area: File List Context */}
+      <div className="w-[300px] bg-slate-900/50 shrink-0 flex flex-col border-l border-slate-800">
+        <div className="p-4 border-b border-slate-800">
+          <h3 className="font-bold text-slate-200 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-500" />
+            Conflicted Files ({conflictedFiles.length})
           </h3>
         </div>
 
-        <div className="p-6 space-y-8">
-          
-          <div className="bg-rose-950/20 border border-rose-900/50 rounded-xl p-5">
-            <h4 className="font-semibold text-rose-400 flex items-center gap-2 mb-3">
-              <AlertTriangle className="w-4 h-4" />
-              Why did this happen?
-            </h4>
-            <p className="text-sm text-slate-300 leading-relaxed">
-              Git cannot automatically merge these branches because both <span className="font-mono text-xs bg-slate-800 px-1 rounded">main</span> and <span className="font-mono text-xs bg-slate-800 px-1 rounded">feature/graph-rework</span> modified the exact same lines of code in <span className="font-mono text-xs bg-slate-800 px-1 rounded">src/utils/graphLayout.ts</span>.
-            </p>
-            <p className="text-sm text-slate-300 leading-relaxed mt-4">
-              Git doesn't know which version is correct, so it paused the merge and is asking you to make the decision manually.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-slate-200 mb-4 flex items-center gap-2">
-              <GitMerge className="w-4 h-4 text-slate-400" />
-              How we got here
-            </h4>
-            
-            <div className="relative pl-4 space-y-6">
-              <div className="absolute left-4 top-2 bottom-2 w-px bg-slate-800"></div>
-
-              <div className="relative">
-                <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-slate-500 border-2 border-slate-900"></div>
-                <p className="text-xs text-slate-400 font-medium">March 12</p>
-                <p className="text-sm text-slate-200 mt-1">The <span className="font-mono text-xs bg-slate-800 px-1 rounded">feature/graph-rework</span> branch was created from main.</p>
-              </div>
-
-              <div className="relative">
-                <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-900 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                <p className="text-xs text-slate-400 font-medium">March 15</p>
-                <p className="text-sm text-slate-200 mt-1">Someone else updated <span className="font-mono text-xs bg-slate-800 px-1 rounded">graphLayout.ts</span> directly on main to add lane styling constants.</p>
-              </div>
-
-              <div className="relative">
-                <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-blue-500 border-2 border-slate-900 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
-                <p className="text-xs text-slate-400 font-medium">March 18</p>
-                <p className="text-sm text-slate-200 mt-1">You updated the exact same section in your feature branch to add <span className="font-mono text-xs bg-slate-800 px-1 rounded">calculateLanes</span>.</p>
-              </div>
-
-              <div className="relative">
-                <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-rose-500 border-2 border-slate-900 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></div>
-                <p className="text-xs text-slate-400 font-medium">Today</p>
-                <p className="text-sm text-slate-200 mt-1">You tried to merge your feature branch back into main, triggering this conflict.</p>
-              </div>
-            </div>
-          </div>
-
+        <div className="p-2 space-y-1 overflow-y-auto custom-scrollbar">
+          {conflictedFiles.map(f => (
+            <button
+              key={f.path}
+              onClick={() => setActiveConflictFile(f.path)}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ${activeConflictFile === f.path ? 'bg-slate-800 text-slate-200 font-medium' : 'text-slate-400 hover:bg-slate-800/50'}`}
+              title={f.path}
+            >
+              {f.path.split('/').pop()}
+            </button>
+          ))}
         </div>
       </div>
 

@@ -18,6 +18,9 @@ export interface GitBranch {
   commitHash: string;
   isRemote: boolean;
   isCurrent: boolean;
+  upstream?: string;
+  ahead?: number;
+  behind?: number;
 }
 
 export interface GitTag {

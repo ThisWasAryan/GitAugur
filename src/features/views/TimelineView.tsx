@@ -4,8 +4,6 @@ import { differenceInDays } from 'date-fns';
 
 import { useMemo } from 'react';
 
-// ... other code will be replaced properly ...
-
 export function TimelineView() {
   const { history } = useGitEngineStore();
 

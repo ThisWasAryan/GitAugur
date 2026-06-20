@@ -2,20 +2,16 @@ import {
   FolderGit2,
   GitBranch,
   Tags,
-  GitPullRequest,
   Users,
-  Box,
   Archive,
   Settings,
   History
 } from "lucide-react";
 
-import { usePRStore } from "../../stores/usePRStore";
 import { useNavigationStore } from "../../stores/useNavigationStore";
 import type { ViewType } from "../../stores/useNavigationStore";
 
 export function Sidebar() {
-  const pullRequests = usePRStore(state => state.pullRequests);
   const { activeView, setActiveView } = useNavigationStore();
 
   const navItems: { name: ViewType | "Stashes", icon: any }[] = [
@@ -23,9 +19,7 @@ export function Sidebar() {
     { name: "Files", icon: FolderGit2 },
     { name: "Branches", icon: GitBranch },
     { name: "Tags", icon: Tags },
-    { name: "Pull Requests", icon: GitPullRequest },
     { name: "Contributors", icon: Users },
-    { name: "Releases", icon: Box },
     { name: "Stashes", icon: Archive },
   ];
 
@@ -51,32 +45,7 @@ export function Sidebar() {
                   <item.icon className={`w-4 h-4 ${activeView === item.name ? 'text-blue-400' : ''}`} />
                   <span className="text-sm font-medium">{item.name}</span>
                 </div>
-                {item.name === 'Pull Requests' && (
-                  <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    {pullRequests.length}
-                  </span>
-                )}
               </button>
-              {item.name === 'Pull Requests' && activeView === 'Pull Requests' && (
-                <ul className="mt-1 ml-4 space-y-1 pl-3 border-l border-slate-700/50">
-                  {pullRequests.map(pr => (
-                    <li key={pr.id}>
-                      <button 
-                        onClick={() => setActiveView('Pull Requests')}
-                        className="w-full text-left block px-2 py-1.5 rounded hover:bg-slate-800/80 transition-colors"
-                      >
-                        <div className="text-xs text-slate-300 font-medium truncate" title={pr.title}>
-                          {pr.title}
-                        </div>
-                        <div className="text-[10px] text-slate-500 flex items-center gap-2 mt-0.5">
-                          <span className="font-mono text-slate-400">#{pr.id.split('-')[1]}</span>
-                          <span>by {pr.author}</span>
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
             </li>
           ))}
         </ul>

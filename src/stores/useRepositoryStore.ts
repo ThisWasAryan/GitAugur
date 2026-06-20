@@ -10,9 +10,6 @@ interface RepositoryStore {
   setRepoPath: (path: string | null) => void;
   setRepositoryState: (state: RepositoryState) => void;
   setCurrentBranch: (branch: string) => void;
-  
-  // For mock demonstration, a way to toggle state
-  toggleMergeState: () => void;
 }
 
 export const useRepositoryStore = create<RepositoryStore>()(
@@ -24,10 +21,6 @@ export const useRepositoryStore = create<RepositoryStore>()(
       setRepoPath: (path) => set({ repoPath: path }),
       setRepositoryState: (state) => set({ currentState: state }),
       setCurrentBranch: (branch) => set({ currentBranch: branch }),
-      
-      toggleMergeState: () => set((state) => ({ 
-        currentState: state.currentState === 'NORMAL' ? 'MERGING' : 'NORMAL' 
-      })),
     }),
     {
       name: 'repository-storage',

@@ -10,6 +10,12 @@ export function MenuBar() {
   const { t } = useTerminology();
   const { setRepoPath } = useRepositoryStore();
 
+  const handleUndo = async () => {
+    closeMenu();
+    const { useGitEngineStore } = await import('../../engine/GitEngineStore');
+    await useGitEngineStore.getState().undo();
+  };
+
   const handleMenuClick = (menu: MenuState) => {
     setActiveMenu(activeMenu === menu ? null : menu);
   };
@@ -76,8 +82,8 @@ export function MenuBar() {
         </button>
         {activeMenu === 'Edit' && (
           <div className="absolute top-full left-0 mt-1 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-xl py-1 z-50">
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Undo</button>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Redo</button>
+            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white" onClick={handleUndo}>Undo (Reset hard HEAD@1)</button>
+            <button className="w-full text-left px-4 py-1.5 text-slate-500 cursor-not-allowed">Redo</button>
           </div>
         )}
       </div>

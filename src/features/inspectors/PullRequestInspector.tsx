@@ -1,16 +1,23 @@
 import { useGitEngineStore } from "../../engine/GitEngineStore";
 import { useInspectorStore } from "../../stores/useInspectorStore";
-import { usePRStore } from "../../stores/usePRStore";
+
 import { X, GitPullRequest, GitMerge, AlertCircle } from "lucide-react";
 
 
 export function PullRequestInspector() {
   const { previewMerge } = useGitEngineStore();
   const { inspectedEntityId, showStaging } = useInspectorStore();
-  const { pullRequests } = usePRStore();
+  const pullRequests: any[] = [];
 
-  // Find the PR where ID matches the title or we can just mock it for now since mock state doesn't have PR IDs
-  const pr = pullRequests.find(pr => pr.id === inspectedEntityId) || pullRequests[0];
+  if (!inspectedEntityId) return null;
+
+  const pr = pullRequests.find((pr: any) => pr.id === inspectedEntityId) || {
+    id: inspectedEntityId,
+    title: "Mock PR",
+    author: "User",
+    status: "open",
+    createdAt: "Unknown"
+  };
 
   if (!pr) {
     return (
