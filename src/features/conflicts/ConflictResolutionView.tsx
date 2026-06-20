@@ -158,14 +158,25 @@ export function ConflictResolutionView() {
     }
   };
 
-  const handleAbortMerge = async () => {
-    if (repoPath) {
-      try {
+  const handleAbortOperation = async () => {
+    if (!repoPath) return;
+    const currentState = useRepositoryStore.getState().currentState;
+    try {
+      setSaving(true);
+      if (currentState === 'MERGING') {
         await invoke('git_exec', { repoPath, args: ['merge', '--abort'] });
-        fetchRepoState(repoPath);
-      } catch (e) {
-        console.error(e);
+      } else if (currentState === 'REBASING') {
+        await invoke('git_exec', { repoPath, args: ['rebase', '--abort'] });
+      } else if (currentState === 'CHERRY_PICKING') {
+        await invoke('git_exec', { repoPath, args: ['cherry-pick', '--abort'] });
+      } else if (currentState === 'REVERTING') {
+        await invoke('git_exec', { repoPath, args: ['revert', '--abort'] });
       }
+      await fetchRepoState(repoPath);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -202,27 +213,6 @@ export function ConflictResolutionView() {
           await invoke('git_exec', { repoPath, args: ['rebase', '--skip'] });
         } else if (currentState === 'CHERRY_PICKING') {
           await invoke('git_exec', { repoPath, args: ['cherry-pick', '--skip'] });
-        }
-        await fetchRepoState(repoPath);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setSaving(false);
-      }
-    };
-
-    const handleAbort = async () => {
-      if (!repoPath) return;
-      try {
-        setSaving(true);
-        if (currentState === 'MERGING') {
-          await invoke('git_exec', { repoPath, args: ['merge', '--abort'] });
-        } else if (currentState === 'REBASING') {
-          await invoke('git_exec', { repoPath, args: ['rebase', '--abort'] });
-        } else if (currentState === 'CHERRY_PICKING') {
-          await invoke('git_exec', { repoPath, args: ['cherry-pick', '--abort'] });
-        } else if (currentState === 'REVERTING') {
-          await invoke('git_exec', { repoPath, args: ['revert', '--abort'] });
         }
         await fetchRepoState(repoPath);
       } catch (e) {
@@ -270,7 +260,7 @@ export function ConflictResolutionView() {
           )}
 
           <button 
-            onClick={handleAbort}
+            onClick={handleAbortOperation}
             disabled={saving}
             className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-medium transition-colors disabled:opacity-50"
           >
@@ -296,10 +286,10 @@ export function ConflictResolutionView() {
           </div>
           <div className="flex items-center gap-3">
             <button 
-              onClick={handleAbortMerge}
+              onClick={handleAbortOperation}
               className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-medium text-sm transition-colors border border-slate-700"
             >
-              Abort Merge
+              Abort {useRepositoryStore.getState().currentState}
             </button>
             <button 
               onClick={handleSaveResolution}
