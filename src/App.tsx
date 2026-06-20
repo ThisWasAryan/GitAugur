@@ -88,7 +88,7 @@ function App() {
     return <LaunchScreen />;
   }
 
-  const isMerging = currentState === 'MERGING';
+  const isResolvingConflicts = currentState !== 'NORMAL';
 
   const renderActiveView = () => {
     switch (activeView) {
@@ -212,10 +212,10 @@ function App() {
               )}
 
 
-              {isMerging ? (
+              {isResolvingConflicts ? (
                 <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400 bg-rose-950/30 px-2 py-1 rounded border border-rose-900/50">
                   <AlertTriangle className="w-4 h-4 text-rose-500" />
-                  Merge Conflicts
+                  Resolving {currentState}
                 </span>
               ) : (
                 <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mr-2">
@@ -238,7 +238,7 @@ function App() {
 
           <div className="flex-1 flex relative overflow-hidden min-h-0">
             {/* Main Area: Either Conflict Resolver, or Active Navigation View */}
-            {isMerging ? (
+            {isResolvingConflicts ? (
               <ConflictResolutionView />
             ) : (
               renderActiveView()

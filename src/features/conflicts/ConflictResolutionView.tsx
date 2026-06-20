@@ -169,9 +169,97 @@ export function ConflictResolutionView() {
   };
 
   if (!activeConflictFile) {
+    const currentState = useRepositoryStore.getState().currentState;
+
+    const handleFinalize = async () => {
+      if (!repoPath) return;
+      try {
+        setSaving(true);
+        if (currentState === 'REBASING') {
+          await invoke('git_exec', { repoPath, args: ['rebase', '--continue'] });
+        } else {
+          // For MERGING and CHERRY_PICKING
+          await invoke('git_exec', { repoPath, args: ['commit', '--no-edit'] });
+        }
+        await fetchRepoState(repoPath);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    const handleSkip = async () => {
+      if (!repoPath) return;
+      try {
+        setSaving(true);
+        if (currentState === 'REBASING') {
+          await invoke('git_exec', { repoPath, args: ['rebase', '--skip'] });
+        } else if (currentState === 'CHERRY_PICKING') {
+          await invoke('git_exec', { repoPath, args: ['cherry-pick', '--skip'] });
+        }
+        await fetchRepoState(repoPath);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    const handleAbort = async () => {
+      if (!repoPath) return;
+      try {
+        setSaving(true);
+        if (currentState === 'MERGING') {
+          await invoke('git_exec', { repoPath, args: ['merge', '--abort'] });
+        } else if (currentState === 'REBASING') {
+          await invoke('git_exec', { repoPath, args: ['rebase', '--abort'] });
+        } else if (currentState === 'CHERRY_PICKING') {
+          await invoke('git_exec', { repoPath, args: ['cherry-pick', '--abort'] });
+        } else if (currentState === 'REVERTING') {
+          await invoke('git_exec', { repoPath, args: ['revert', '--abort'] });
+        }
+        await fetchRepoState(repoPath);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setSaving(false);
+      }
+    };
+
     return (
-      <div className="flex-1 flex items-center justify-center bg-slate-950 text-slate-400">
-        <p>No conflicted files to display.</p>
+      <div className="flex-1 flex flex-col items-center justify-center bg-slate-950 text-slate-400 p-8 text-center">
+        <Check className="w-16 h-16 text-emerald-500 mb-4" />
+        <h2 className="text-2xl font-bold text-slate-200 mb-2">No Conflicts Remaining</h2>
+        <p className="mb-8 max-w-md">All conflicts have been resolved or the operation is paused. You can now finalize the operation or skip this commit.</p>
+        
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={handleFinalize}
+            disabled={saving}
+            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold shadow-lg shadow-emerald-900/20 transition-all disabled:opacity-50"
+          >
+            {saving ? 'Processing...' : 'Finalize Operation'}
+          </button>
+          
+          {(currentState === 'CHERRY_PICKING' || currentState === 'REBASING') && (
+            <button 
+              onClick={handleSkip}
+              disabled={saving}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+            >
+              Skip (Empty Commit)
+            </button>
+          )}
+
+          <button 
+            onClick={handleAbort}
+            disabled={saving}
+            className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-medium transition-colors disabled:opacity-50"
+          >
+            Abort {currentState}
+          </button>
+        </div>
       </div>
     );
   }

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type RepositoryState = 'NORMAL' | 'MERGING' | 'REBASING';
+export type RepositoryState = 'NORMAL' | 'MERGING' | 'REBASING' | 'CHERRY_PICKING' | 'REVERTING';
 
 interface RepositoryStore {
   repoPath: string | null;
