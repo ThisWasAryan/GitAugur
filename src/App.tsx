@@ -20,11 +20,13 @@ import { ArrowUp, ArrowDown, RefreshCw, CheckCircle2, AlertTriangle, PanelLeft, 
 import { useRepositoryStore } from "./stores/useRepositoryStore";
 import { useNavigationStore } from "./stores/useNavigationStore";
 import { useLayoutStore } from "./stores/useLayoutStore";
+import { useSettingsStore } from "./stores/useSettingsStore";
 import { useGitEngineStore } from "./engine/GitEngineStore";
 import { useEffect } from "react";
 import { Toaster } from "sonner";
 
 import { MenuBar } from "./components/layout/MenuBar";
+import { CreateBranchModal } from "./features/preview/CreateBranchModal";
 import { LaunchScreen } from "./features/launch/LaunchScreen";
 import { BottomPanel } from "./components/layout/BottomPanel";
 import { useOperationStore, setupGitOperationListener } from "./stores/useOperationStore";
@@ -37,12 +39,13 @@ function App() {
   const { activeView, graphMode, setGraphMode } = useNavigationStore();
 
   const currentBranch = history.branches.find(b => b.name === HEAD);
-  const aheadCount = currentBranch?.ahead || 0;
-  const behindCount = currentBranch?.behind || 0;
+  const aheadCount = currentBranch?.aheadDefault || 0;
+  const behindCount = currentBranch?.behindDefault || 0;
 
   const { leftSidebarOpen, rightSidebarOpen, toggleLeftSidebar, toggleRightSidebar } = useLayoutStore();
   const operations = useOperationStore(state => state.operations);
   const togglePanel = useOperationStore(state => state.togglePanel);
+  const uiMode = useSettingsStore(state => state.uiMode);
 
   useEffect(() => {
     setupGitOperationListener();
@@ -133,7 +136,7 @@ function App() {
               {graphMode === 'GIT_GRAPH' && <CommitGraph />}
               {graphMode === 'REPO_FLOW' && <RepoFlowView />}
               {graphMode === 'TIMELINE' && <TimelineView />}
-              <TutorPanel />
+              {uiMode === 'beginner' && <TutorPanel />}
             </div>
             {rightSidebarOpen && <RightSidebarContainer />}
           </>

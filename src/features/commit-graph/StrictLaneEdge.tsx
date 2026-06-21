@@ -22,8 +22,9 @@ export function StrictLaneEdge({
     stroke: isGhost ? GHOST_COLOR.stroke : bColor.stroke
   };
   
-  // The distance before targetY where we start curving
-  const curveOffset = 24; 
+  // The distance before targetY where we start curving. Limit it so we don't go past the target.
+  const maxOffset = Math.abs(targetY - sourceY) / 2;
+  const curveOffset = Math.min(24, maxOffset); 
   
   let path = '';
   

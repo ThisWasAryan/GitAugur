@@ -8,6 +8,7 @@ import { GitBranch as GitBranchIcon, Tag, User } from "lucide-react";
 import type { GraphMode } from "../../stores/useNavigationStore";
 import { useInspectorStore } from "../../stores/useInspectorStore";
 import { useContextMenu } from "../../components/ui/ContextMenu";
+import { useLayoutStore } from "../../stores/useLayoutStore";
 import { useGitEngineStore } from "../../engine/GitEngineStore";
 import { colorForBranch, GHOST_COLOR } from "../../utils/branchColors";
 
@@ -63,9 +64,15 @@ export function CommitNode({ data }: NodeProps<CommitNodeType>) {
         onClick={() => inspectEntity('commit', commit.hash)}
         onContextMenu={(e) => {
           e.preventDefault();
+          
+          // Determine base branch for creation: if this commit has a branch, use it, else use the hash
+          const baseForNewBranch = branches.length > 0 ? branches[0].name : commit.hash;
+          
           showMenu(e.clientX, e.clientY, [
             { label: 'View Details', onClick: () => inspectEntity('commit', commit.hash) },
             { label: 'Copy Commit Hash', onClick: () => navigator.clipboard.writeText(commit.hash) },
+            { divider: true, onClick: () => {} },
+            { label: 'Create Branch Here', onClick: () => useLayoutStore.getState().setCreateBranchModal(true, baseForNewBranch) },
             { divider: true, onClick: () => {} },
             { label: 'Cherry Pick', onClick: () => useGitEngineStore.getState().cherryPick(commit.hash) },
             { label: 'Rebase onto this commit', onClick: () => useGitEngineStore.getState().rebase(commit.hash) },

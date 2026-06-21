@@ -1,4 +1,5 @@
 import { GitBranch, Plus, Copy, Trash2, MoreHorizontal } from "lucide-react";
+import { GitBranch, Copy, Trash2, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { useGitEngineStore } from "../../engine/GitEngineStore";
 import { invoke } from "@tauri-apps/api/core";
@@ -7,6 +8,7 @@ import type { GitBranch as GitBranchType } from "../../types/git";
 import { useInspectorStore } from "../../stores/useInspectorStore";
 import { useContextMenu } from "../../components/ui/ContextMenu";
 import { ActionPreviewModal } from "../preview/ActionPreviewModal";
+import { useLayoutStore } from "../../stores/useLayoutStore";
 import { CreateBranchModal } from "../preview/CreateBranchModal";
 
 export function BranchesView() {
@@ -15,8 +17,13 @@ export function BranchesView() {
   const branches = history.branches;
   const { inspectEntity } = useInspectorStore();
   const { showMenu } = useContextMenu();
-  const [preview, setPreview] = useState<{isOpen: boolean, action: 'CHECKOUT' | 'DELETE' | null, branch: string}>({ isOpen: false, action: null, branch: "" });
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [preview, setPreview] = useState<{isOpen: boolean, action: 'CHECKOUT' | 'DELETE', branch: string}>({
+    isOpen: false,
+    action: 'CHECKOUT',
+    branch: ''
+  });
+  
+  const setCreateBranchModal = useLayoutStore(state => state.setCreateBranchModal);
   
   const defaultBranches = branches.filter(b => b.name === 'main' || b.name === 'master');
   const localBranches = branches.filter(b => !b.isRemote && b.name !== 'main' && b.name !== 'master');
@@ -163,8 +170,8 @@ export function BranchesView() {
         </div>
         <div className="flex gap-2">
           <button 
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+            onClick={() => setCreateBranchModal(true)}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-emerald-900/20 flex items-center gap-2"
           >
             New branch
           </button>
@@ -189,11 +196,6 @@ export function BranchesView() {
         }}
         action={preview.action}
         branchName={preview.branch}
-      />
-      
-      <CreateBranchModal 
-        isOpen={isCreateModalOpen} 
-        onClose={() => setIsCreateModalOpen(false)} 
       />
     </div>
   );

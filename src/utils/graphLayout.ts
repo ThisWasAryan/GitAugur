@@ -212,10 +212,10 @@ export function buildGraphLayout(history: GitHistory, preview?: PreviewState): {
       const isMergeEdge = parentIndex > 0;
       
       // Determine the lane for the edge color.
-      // Merge edges take the color of the branch being merged IN (the parent).
-      // Normal edges take the color of the current lane.
-      const targetLane = laneMap.get(parentHash) || 0;
-      const edgeLaneBranchName = laneBranchMap.get(targetLane) || `__lane_${targetLane}`;
+      // Primary edges take the color of the current (source) lane.
+      // Merge edges take the color of the branch being merged IN (the parent's lane).
+      const edgeColorLane = isMergeEdge ? (laneMap.get(parentHash) || 0) : lane;
+      const edgeLaneBranchName = laneBranchMap.get(edgeColorLane) || `__lane_${edgeColorLane}`;
       
       const bColor = colorForBranch(edgeLaneBranchName);
       
