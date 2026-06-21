@@ -25,6 +25,8 @@ export function StrictLaneEdge({
   // The total vertical distance for the curve
   const maxOffset = Math.abs(targetY - sourceY);
   const curveOffset = Math.min(24, maxOffset); 
+  const sign = targetY > sourceY ? 1 : -1;
+  const yOffset = curveOffset * sign;
   
   let path = '';
   
@@ -32,13 +34,12 @@ export function StrictLaneEdge({
     // Same lane, straight line
     path = `M ${sourceX},${sourceY} L ${targetX},${targetY}`;
   } else {
-    // Different lanes. Curve immediately below the source into the target lane,
-    // then go straight down.
+    // Different lanes. Curve immediately from source into the target lane.
     
     // Start curve immediately at sourceY
-    path = `M ${sourceX},${sourceY} Q ${sourceX},${sourceY + curveOffset/2} ${(sourceX+targetX)/2},${sourceY + curveOffset/2} T ${targetX},${sourceY + curveOffset}`;
+    path = `M ${sourceX},${sourceY} Q ${sourceX},${sourceY + yOffset/2} ${(sourceX+targetX)/2},${sourceY + yOffset/2} T ${targetX},${sourceY + yOffset}`;
     
-    // Then straight down to target
+    // Then straight to target
     path += ` L ${targetX},${targetY}`;
   }
 

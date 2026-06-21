@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronDown, GitBranch, Check, Plus, AlertTriangle } from "lucide-react";
 import { useGitEngineStore } from "../../engine/GitEngineStore";
 import { CheckoutWarningDialog } from "./CheckoutWarningDialog";
+import { useLayoutStore } from "../../stores/useLayoutStore";
 
 
 export function BranchDropdown() {
@@ -9,8 +10,6 @@ export function BranchDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  const [newBranchName, setNewBranchName] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
   const [checkoutTarget, setCheckoutTarget] = useState<string | null>(null);
 
   let currentBranch = history.branches.find(b => b.name === HEAD)?.name;
@@ -43,15 +42,6 @@ export function BranchDropdown() {
       return;
     }
     checkout(branchName);
-    setIsOpen(false);
-  };
-
-  const handleCreateBranch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBranchName.trim()) return;
-    createBranch(newBranchName.trim());
-    setNewBranchName("");
-    setIsCreating(false);
     setIsOpen(false);
   };
 
@@ -145,32 +135,16 @@ export function BranchDropdown() {
           </div>
 
           <div className="border-t border-slate-800 p-2 shrink-0 bg-slate-950/30">
-            {isCreating ? (
-              <form onSubmit={handleCreateBranch} className="flex gap-2">
-                <input 
-                  type="text" 
-                  autoFocus
-                  placeholder="Branch name..." 
-                  value={newBranchName}
-                  onChange={(e) => setNewBranchName(e.target.value)}
-                  className="flex-1 bg-slate-950 border border-slate-800 rounded px-2 py-1 text-sm text-slate-200 outline-none focus:border-blue-500"
-                />
-                <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white rounded px-2 py-1 text-xs font-semibold">
-                  Create
-                </button>
-                <button type="button" onClick={() => setIsCreating(false)} className="text-slate-400 hover:text-slate-200 px-2 py-1 text-xs">
-                  Cancel
-                </button>
-              </form>
-            ) : (
               <button 
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-emerald-400 hover:bg-slate-800 rounded-md transition-colors"
-                onClick={() => setIsCreating(true)}
+                onClick={() => {
+                  setIsOpen(false);
+                  useLayoutStore.getState().setCreateBranchModal(true, HEAD || 'HEAD');
+                }}
               >
                 <Plus className="w-4 h-4" />
-                Create new branch
+                Create new branch...
               </button>
-            )}
           </div>
         </div>
       )}
