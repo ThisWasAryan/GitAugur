@@ -1,4 +1,4 @@
-import { GitBranch, Copy, Trash2, MoreHorizontal } from "lucide-react";
+import { GitBranch, Copy, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useGitEngineStore } from "../../engine/GitEngineStore";
 import { invoke } from "@tauri-apps/api/core";
@@ -41,13 +41,11 @@ export function BranchesView() {
       <div className="mb-8">
         <h2 className="text-sm font-bold text-slate-100 mb-3">{title}</h2>
         <div className="bg-[#0d1117] border border-slate-800 rounded-xl overflow-hidden shadow-sm">
-          {/* Table Header */}
           <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-slate-800 text-xs font-semibold text-slate-400">
-            <div className="col-span-4">Branch</div>
-            <div className="col-span-2">Updated</div>
-            <div className="col-span-2">Check status</div>
-            <div className="col-span-2">Behind | Ahead</div>
-            <div className="col-span-2">Pull request</div>
+            <div className="col-span-5">Branch</div>
+            <div className="col-span-3">Updated</div>
+            <div className="col-span-3">Behind | Ahead</div>
+            <div className="col-span-1"></div>
           </div>
           {/* Table Body */}
           <div className="divide-y divide-slate-800/50">
@@ -76,7 +74,7 @@ export function BranchesView() {
                     ]);
                   }}
                 >
-                  <div className="col-span-4 flex items-center gap-3">
+                  <div className="col-span-5 flex items-center gap-3">
                     <div className="flex items-center gap-2">
                        <span 
                           className={`font-mono text-xs px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-transparent cursor-pointer hover:underline`}
@@ -94,18 +92,14 @@ export function BranchesView() {
                     </div>
                   </div>
                   
-                  <div className="col-span-2 flex items-center gap-2 text-xs text-slate-300">
+                  <div className="col-span-3 flex items-center gap-2 text-xs text-slate-300">
                     <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-bold overflow-hidden shadow-inner">
                        <span className="text-slate-400">👤</span>
                     </div>
                     {lastCommitTime}
                   </div>
                   
-                  <div className="col-span-2 flex items-center text-xs text-slate-500">
-                    {/* Empty check status */}
-                  </div>
-                  
-                  <div className="col-span-2 flex flex-col justify-center">
+                  <div className="col-span-3 flex flex-col justify-center">
                     {isDefault ? (
                       <span className="px-2.5 py-0.5 rounded-full border border-slate-700 text-xs text-slate-400 w-fit bg-slate-800/50">Default</span>
                     ) : (
@@ -128,7 +122,7 @@ export function BranchesView() {
                     )}
                   </div>
                   
-                  <div className="col-span-2 flex items-center justify-end gap-2 pr-2">
+                  <div className="col-span-1 flex items-center justify-end gap-2 pr-2">
                     {!branch.isCurrent && !branch.isRemote && (
                       <button 
                         onClick={() => setPreview({ isOpen: true, action: 'CHECKOUT', branch: branch.name })} 
@@ -145,9 +139,6 @@ export function BranchesView() {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
-                    <button className="text-slate-500 hover:text-slate-300 p-1 transition-colors">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
               );

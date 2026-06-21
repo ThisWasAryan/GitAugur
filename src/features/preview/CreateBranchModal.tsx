@@ -83,12 +83,12 @@ export function CreateBranchModal() {
               onChange={(e) => setBaseBranch(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-blue-500 transition-all text-sm"
             >
-              <option value="HEAD">Current Branch (HEAD)</option>
+              <option value="HEAD" className="bg-slate-900 text-slate-200">Current Branch (HEAD)</option>
               {baseBranch !== 'HEAD' && !history.branches.some(b => b.name === baseBranch) && (
-                <option value={baseBranch}>Commit {baseBranch.substring(0, 7)}</option>
+                <option value={baseBranch} className="bg-slate-900 text-slate-200">Commit {baseBranch.substring(0, 7)}</option>
               )}
               {history.branches.map(b => (
-                <option key={b.name} value={b.name}>{b.name}</option>
+                <option key={b.name} value={b.name} className="bg-slate-900 text-slate-200">{b.name}</option>
               ))}
             </select>
           </div>
