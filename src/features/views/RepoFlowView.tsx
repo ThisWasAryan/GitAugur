@@ -1,43 +1,48 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { ReactFlow, useNodesState, useEdgesState, Background, Controls } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { useGitEngineStore } from '../../engine/GitEngineStore';
-import { GitBranch as GitBranchIcon, GitMerge, AlertTriangle, ArrowUp, ArrowDown, Clock, CheckCircle2 } from 'lucide-react';
+import { GitBranch as GitBranchIcon, GitMerge, CheckCircle2 } from 'lucide-react';
 import { useNavigationStore } from '../../stores/useNavigationStore';
+import { buildRepoFlowLayout } from '../../utils/repoFlowLayout';
+import { CircleCommitNode, LabelNode } from '../repo-flow/RepoFlowNodes';
+
+const nodeTypes = {
+  commitNode: CircleCommitNode,
+  labelNode: LabelNode,
+};
 
 export function RepoFlowView() {
   const { history } = useGitEngineStore();
   const [selectedBranchName, setSelectedBranchName] = useState<string | null>(null);
 
   const branches = history.branches;
-  const localBranches = branches.filter(b => !b.isRemote);
-  const mainBranch = localBranches.find(b => b.name === 'main');
-  const otherBranches = localBranches.filter(b => b.name !== 'main');
+  const mainBranch = branches.find(b => b.name === 'main' && !b.isRemote);
 
-  const selectedBranch = branches.find(b => b.name === selectedBranchName);
+  const selectedBranch = branches.find(b => b.name === selectedBranchName && !b.isRemote);
 
-  const handleDragStart = (e: React.DragEvent, branchName: string) => {
-    e.dataTransfer.setData('application/x-git-branch', branchName);
-    e.dataTransfer.effectAllowed = 'move';
-  };
+  // Compute Layout
+  const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
+    return buildRepoFlowLayout(history);
+  }, [history]);
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  const handleDrop = async (e: React.DragEvent, targetBranchName: string) => {
-    e.preventDefault();
-    const sourceBranchName = e.dataTransfer.getData('application/x-git-branch');
-    if (sourceBranchName && sourceBranchName !== targetBranchName) {
-      if (window.confirm(`Rebase '${sourceBranchName}' onto '${targetBranchName}'?`)) {
-        // We must switch to the source branch first before rebasing onto the target branch
-        const { checkout, rebase } = useGitEngineStore.getState();
-        await checkout(sourceBranchName);
-        await rebase(targetBranchName);
-      }
+  // Update nodes and edges when history changes
+  useEffect(() => {
+    setNodes(initialNodes);
+    setEdges(initialEdges);
+  }, [initialNodes, initialEdges, setNodes, setEdges]);
+
+  // Handle node clicks to select branches
+  const onNodeClick = (_: React.MouseEvent, node: any) => {
+    if (node.type === 'labelNode' && node.data.type === 'branch') {
+      setSelectedBranchName(node.data.name);
     }
   };
 
-  // Helper to compute ahead/behind using DAG
+  // Helper to compute ahead/behind
   const getBranchMetrics = (branchName: string) => {
     const branch = branches.find(b => b.name === branchName);
     if (!branch || !mainBranch || branchName === 'main') return { ahead: 0, behind: 0, lastCommitTime: 'Unknown' };
@@ -48,119 +53,48 @@ export function RepoFlowView() {
     return { ahead: branch.ahead || 0, behind: branch.behind || 0, lastCommitTime };
   };
 
-  const renderTreeItem = (branch: typeof branches[0], isLast: boolean) => {
-    const isSelected = selectedBranchName === branch.name;
-    const metrics = getBranchMetrics(branch.name);
-    const isStale = metrics.ahead === 0 && metrics.behind > 3;
-    const isHealthy = metrics.ahead > 0 && metrics.behind === 0;
-
-    return (
-      <div key={branch.name} className="flex relative">
-        {/* Tree lines */}
-        <div className="w-12 relative shrink-0">
-          <div className="absolute top-0 bottom-0 left-6 w-px bg-slate-800" style={{ height: isLast ? '24px' : '100%' }}></div>
-          <div className="absolute top-6 left-6 w-6 h-px bg-slate-800"></div>
-        </div>
-
-        {/* Branch Card */}
-        <div 
-          draggable
-          onDragStart={(e) => handleDragStart(e, branch.name)}
-          onDragOver={handleDragOver}
-          onDrop={(e) => handleDrop(e, branch.name)}
-          onClick={() => setSelectedBranchName(branch.name)}
-          className={`mt-2 mb-4 p-4 rounded-xl border flex-1 cursor-grab active:cursor-grabbing transition-all ${
-            isSelected ? 'bg-blue-950/20 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.1)]' : 'bg-slate-900 border-slate-800 hover:border-slate-700'
-          }`}
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <GitBranchIcon className={`w-5 h-5 ${isStale ? 'text-slate-500' : 'text-blue-400'}`} />
-            <h3 className={`font-mono font-medium text-lg ${isSelected ? 'text-blue-400' : 'text-slate-200'}`}>
-              {branch.name}
-            </h3>
-            {branch.isCurrent && (
-              <span className="text-[10px] uppercase tracking-wider font-bold bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/20">
-                Active
-              </span>
-            )}
-          </div>
-
-          <div className="pl-8 flex flex-col gap-2">
-            <div className="flex items-center gap-4 text-sm">
-              <span className={`flex items-center gap-1 ${metrics.ahead > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
-                <ArrowUp className="w-4 h-4" /> {metrics.ahead} commit{metrics.ahead !== 1 && 's'} ahead
-              </span>
-              <span className={`flex items-center gap-1 ${metrics.behind > 0 ? 'text-rose-400' : 'text-slate-500'}`}>
-                <ArrowDown className="w-4 h-4" /> {metrics.behind} commit{metrics.behind !== 1 && 's'} behind
-              </span>
-            </div>
-            
-            <div className="flex items-center gap-2 text-sm">
-              {isHealthy ? (
-                <span className="flex items-center gap-1.5 text-emerald-400 bg-emerald-950/30 px-2 py-1 rounded w-fit border border-emerald-900/50">
-                  <CheckCircle2 className="w-4 h-4" /> Ready for Pull Request
-                </span>
-              ) : isStale ? (
-                <span className="flex items-center gap-1.5 text-slate-400 bg-slate-800/50 px-2 py-1 rounded w-fit border border-slate-700/50">
-                  <Clock className="w-4 h-4" /> Stale branch - Candidate for deletion
-                </span>
-              ) : (
-                <span className="flex items-center gap-1.5 text-amber-400 bg-amber-950/30 px-2 py-1 rounded w-fit border border-amber-900/50">
-                  <AlertTriangle className="w-4 h-4" /> Needs updates from main
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="flex w-full h-full bg-slate-950">
-      {/* Left Pane: Tree View */}
-      <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
-              <GitBranchIcon className="w-8 h-8 text-blue-500" />
-              Repository Flow
-            </h1>
-            <p className="text-slate-400 mt-2 text-lg">Understand how work is organized and the health of your branches.</p>
-          </div>
-
-          <div className="font-mono">
-            {/* Main Branch Root */}
-            {mainBranch && (
-              <div 
-                draggable
-                onDragStart={(e) => handleDragStart(e, 'main')}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, 'main')}
-                onClick={() => setSelectedBranchName('main')}
-                className={`flex items-center gap-3 p-4 rounded-xl border mb-2 cursor-grab active:cursor-grabbing transition-all ${
-                  selectedBranchName === 'main' ? 'bg-blue-950/20 border-blue-500/50' : 'bg-slate-900 border-slate-800 hover:border-slate-700'
-                }`}
-              >
-                <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
-                <span className="text-xl font-bold text-slate-200">main</span>
-                <span className="text-xs text-slate-500 ml-auto flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> Updated {getBranchMetrics('main').lastCommitTime}
-                </span>
-              </div>
-            )}
-
-            {/* Children Branches */}
-            <div className="ml-2">
-              {otherBranches.map((branch, idx) => renderTreeItem(branch, idx === otherBranches.length - 1))}
-            </div>
-          </div>
+      {/* Left Pane: Tree View using React Flow */}
+      <div className="flex-1 relative">
+        <div className="absolute top-6 left-8 z-10 pointer-events-none">
+          <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
+            <GitBranchIcon className="w-8 h-8 text-blue-500" />
+            Repository Flow
+          </h1>
+          <p className="text-slate-400 mt-2 text-sm max-w-sm drop-shadow-md bg-slate-950/50 rounded-md p-1">
+            Click on a branch label to view its details and merge options.
+          </p>
         </div>
+        
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onNodeClick={onNodeClick}
+          nodeTypes={nodeTypes}
+          fitView
+          minZoom={0.2}
+          maxZoom={2}
+          proOptions={{ hideAttribution: true }}
+          className="bg-slate-950"
+        >
+          <Background color="#1e293b" gap={20} size={1} />
+          <Controls className="fill-slate-400 bg-slate-900 border-slate-800" />
+        </ReactFlow>
       </div>
 
       {/* Right Pane: Branch Details Sidebar */}
       {selectedBranch && (
-        <div className="w-[400px] border-l border-slate-800 bg-slate-900/50 flex flex-col shrink-0 animate-in slide-in-from-right-8 duration-300">
+        <div className="w-[400px] border-l border-slate-800 bg-slate-900/50 flex flex-col shrink-0 animate-in slide-in-from-right-8 duration-300 relative z-20">
+          <button 
+            onClick={() => setSelectedBranchName(null)}
+            className="absolute top-4 right-4 text-slate-400 hover:text-white"
+          >
+            ✕
+          </button>
+          
           <div className="p-6 border-b border-slate-800">
             <h2 className="text-xl font-bold font-mono text-slate-200 flex items-center gap-2">
               <GitBranchIcon className="w-5 h-5 text-blue-500" />

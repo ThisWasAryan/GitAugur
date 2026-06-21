@@ -3,6 +3,7 @@ import { FileWarning, GitBranch, Check, AlertTriangle } from "lucide-react";
 import { useRepositoryStore } from "../../stores/useRepositoryStore";
 import { invoke } from '@tauri-apps/api/core';
 import { useGitEngineStore } from "../../engine/GitEngineStore";
+import { toast } from "sonner";
 
 interface ConflictBlock {
   id: string;
@@ -103,7 +104,7 @@ export function ConflictResolutionView() {
     
     // Check if all resolved
     if (conflictBlocks.some(b => !b.resolvedWith)) {
-      alert("Please resolve all conflicts before saving.");
+      toast.error("Please resolve all conflicts before saving.");
       return;
     }
     
@@ -150,9 +151,11 @@ export function ConflictResolutionView() {
       
       // Refresh state
       await fetchRepoState(repoPath);
+      toast.success("Conflict resolved successfully.");
       
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      toast.error("Failed to save resolution: " + e.toString());
     } finally {
       setSaving(false);
     }
@@ -173,8 +176,10 @@ export function ConflictResolutionView() {
         await invoke('git_exec', { repoPath, args: ['revert', '--abort'] });
       }
       await fetchRepoState(repoPath);
-    } catch (e) {
+      toast.info("Operation aborted.");
+    } catch (e: any) {
       console.error(e);
+      toast.error("Failed to abort: " + e.toString());
     } finally {
       setSaving(false);
     }
@@ -198,8 +203,10 @@ export function ConflictResolutionView() {
           }
         }
         await fetchRepoState(repoPath);
-      } catch (e) {
+        toast.success("Conflicts resolved and operation finalized.");
+      } catch (e: any) {
         console.error(e);
+        toast.error("Failed to finalize operation: " + e.toString());
       } finally {
         setSaving(false);
       }
