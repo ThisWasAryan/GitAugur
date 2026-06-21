@@ -89,9 +89,10 @@ function RepoFlowGraph() {
             className="bg-slate-950"
             nodesDraggable={false}
             nodesConnectable={false}
+            colorMode="dark"
           >
           <Background color="#1e293b" gap={20} size={1} />
-          <Controls className="fill-slate-400 bg-slate-900 border-slate-800" />
+          <Controls />
         </ReactFlow>
       </div>
       </div>
