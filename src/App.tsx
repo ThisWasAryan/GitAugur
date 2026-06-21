@@ -22,6 +22,7 @@ import { useNavigationStore } from "./stores/useNavigationStore";
 import { useLayoutStore } from "./stores/useLayoutStore";
 import { useSettingsStore } from "./stores/useSettingsStore";
 import { useGitEngineStore } from "./engine/GitEngineStore";
+import { useInspectorStore } from "./stores/useInspectorStore";
 import { useEffect } from "react";
 import { Toaster } from "sonner";
 
@@ -35,7 +36,8 @@ import { Loader2 } from "lucide-react";
 function App() {
   const repoPath = useRepositoryStore(state => state.repoPath);
   const currentState = useRepositoryStore(state => state.currentState);
-  const { fetchRepoState, selectedFile, selectedFileDiff, selectedFileIsStaged, clearSelection, history, HEAD, stageHunk, unstageHunk, isFetching } = useGitEngineStore();
+  const { fetchRepoState, selectedFile, selectedFileDiff, selectedFileIsStaged, clearSelection, history, HEAD, stageHunk, unstageHunk, isFetching, stagedFiles, unstagedFiles } = useGitEngineStore();
+  const { activeInspector } = useInspectorStore();
   const { activeView, graphMode, setGraphMode } = useNavigationStore();
 
   const currentBranch = history.branches.find(b => b.name === HEAD);
@@ -86,6 +88,17 @@ function App() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Auto-manage Right Sidebar visibility for source control
+  useEffect(() => {
+    if (activeInspector === 'staging') {
+      if (stagedFiles.length === 0 && unstagedFiles.length === 0) {
+        useLayoutStore.getState().setRightSidebarOpen(false);
+      } else {
+        useLayoutStore.getState().setRightSidebarOpen(true);
+      }
+    }
+  }, [stagedFiles.length, unstagedFiles.length, activeInspector]);
 
   if (!repoPath) {
     return <LaunchScreen />;
