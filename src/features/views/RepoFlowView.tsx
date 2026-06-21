@@ -224,7 +224,7 @@ export function RepoFlowView() {
                 
                 <button 
                   onClick={() => {
-                    useGitEngineStore.getState().previewMerge(selectedBranch.name);
+                    useGitEngineStore.getState().previewMerge(selectedBranch.name, branches.find(b => b.isCurrent)?.name || 'HEAD');
                     useNavigationStore.getState().setGraphMode('GIT_GRAPH');
                   }}
                   className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg shadow-lg shadow-blue-900/20 transition-all mb-2"

@@ -42,9 +42,9 @@ export function CommitNode({ data }: NodeProps<CommitNodeType>) {
 
   return (
     <div className={`flex items-center group relative h-[24px] min-w-[20px] ${commit.isGhost ? 'opacity-80' : ''}`}>
-      {/* Invisible handles for routing */}
-      <Handle type="target" position={Position.Bottom} className="opacity-0" />
-      <Handle type="source" position={Position.Top} className="opacity-0" />
+      {/* Invisible handles for routing - Centered so edges start exactly at the dot */}
+      <Handle type="target" position={Position.Top} className="opacity-0 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+      <Handle type="source" position={Position.Bottom} className="opacity-0 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
       
       {/* Visual Dot on the line - Centered on the node's origin */}
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
