@@ -3,10 +3,12 @@ import { useFileStore, type FileNode } from "../../stores/useFileStore";
 import { useContextMenu } from "../../components/ui/ContextMenu";
 import { useEffect } from "react";
 import { useRepositoryStore } from "../../stores/useRepositoryStore";
+import { useGitEngineStore } from "../../engine/GitEngineStore";
 
 export function FilesView() {
   const { files, activeFileId, setActiveFile, toggleFolder, fetchFileContent } = useFileStore();
   const repoPath = useRepositoryStore(state => state.repoPath);
+  const { HEAD } = useGitEngineStore();
   const { showMenu } = useContextMenu();
 
   const getActiveFileContent = (nodes: FileNode[], targetId: string): FileNode | null => {
@@ -91,7 +93,7 @@ export function FilesView() {
       <div className="w-80 border-r border-slate-800 flex flex-col h-full bg-slate-900/50">
         <div className="p-4 border-b border-slate-800 flex items-center justify-between">
           <h2 className="font-semibold text-slate-200">Repository Files</h2>
-          <span className="text-xs bg-slate-800 px-2 py-0.5 rounded text-slate-400">main</span>
+          <span className="text-xs bg-slate-800 px-2 py-0.5 rounded text-slate-400 font-mono truncate max-w-[120px]">{HEAD || 'HEAD'}</span>
         </div>
         <div className="flex-1 overflow-auto p-2">
           <div className="space-y-0.5">
