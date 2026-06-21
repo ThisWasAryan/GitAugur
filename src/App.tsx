@@ -13,7 +13,6 @@ import { PullRequestsView } from "./features/views/PullRequestsView";
 import { SettingsView } from "./features/views/SettingsView";
 import { StashesView } from "./features/views/StashesView";
 import { RepoFlowView } from "./features/views/RepoFlowView";
-import { TimelineView } from "./features/views/TimelineView";
 import { TutorPanel } from "./components/layout/TutorPanel";
 import { DiffViewer } from "./features/staging/DiffViewer";
 import { ArrowUp, ArrowDown, RefreshCw, CheckCircle2, AlertTriangle, PanelLeft, PanelRight, X } from "lucide-react";
@@ -148,7 +147,6 @@ function App() {
             <div className="flex-1 relative flex flex-col">
               {graphMode === 'GIT_GRAPH' && <CommitGraph />}
               {graphMode === 'REPO_FLOW' && <RepoFlowView />}
-              {graphMode === 'TIMELINE' && <TimelineView />}
               {uiMode === 'beginner' && <TutorPanel />}
             </div>
             {rightSidebarOpen && <RightSidebarContainer />}
@@ -217,12 +215,6 @@ function App() {
                     className={`px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${graphMode === 'REPO_FLOW' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
                   >
                     Repo Flow
-                  </button>
-                  <button 
-                    onClick={() => setGraphMode('TIMELINE')}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${graphMode === 'TIMELINE' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
-                  >
-                    Timeline
                   </button>
                 </div>
               )}

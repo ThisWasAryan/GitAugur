@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 export type ViewType = 'History' | 'Files' | 'Branches' | 'Tags' | 'Pull Requests' | 'Contributors' | 'Releases' | 'Stashes' | 'Settings';
-export type GraphMode = 'GIT_GRAPH' | 'REPO_FLOW' | 'TIMELINE';
+export type GraphMode = 'GIT_GRAPH' | 'REPO_FLOW';
 
 interface NavigationStore {
   activeView: ViewType;
