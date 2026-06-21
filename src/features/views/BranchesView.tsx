@@ -1,5 +1,4 @@
 import { GitBranch, Plus, Copy, Trash2, MoreHorizontal } from "lucide-react";
-import { GitBranch, Copy, Trash2, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { useGitEngineStore } from "../../engine/GitEngineStore";
 import { invoke } from "@tauri-apps/api/core";
