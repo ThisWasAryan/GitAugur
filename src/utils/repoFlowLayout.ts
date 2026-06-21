@@ -91,8 +91,8 @@ export const buildRepoFlowLayout = (history: GitHistory) => {
       id: `e-${label.commitHash}-${labelId}`,
       source: label.commitHash,
       target: labelId,
-      type: 'straight', // Straight or step edge for labels
-      style: { stroke: '#475569', strokeDasharray: '4,4', strokeWidth: 1 },
+      type: 'straight',
+      style: { stroke: '#475569', strokeWidth: 2, opacity: 0.5 },
       animated: false,
     });
   });

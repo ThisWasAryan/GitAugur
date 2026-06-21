@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { ReactFlow, useNodesState, useEdgesState, Background, Controls } from '@xyflow/react';
+import { ReactFlow, useNodesState, useEdgesState, Background, Controls, useReactFlow, ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useGitEngineStore } from '../../engine/GitEngineStore';
 import { GitBranch as GitBranchIcon, GitMerge, CheckCircle2 } from 'lucide-react';
@@ -12,9 +12,10 @@ const nodeTypes = {
   labelNode: LabelNode,
 };
 
-export function RepoFlowView() {
+function RepoFlowGraph() {
   const { history } = useGitEngineStore();
   const [selectedBranchName, setSelectedBranchName] = useState<string | null>(null);
+  const { setViewport } = useReactFlow();
 
   const branches = history.branches;
   const mainBranch = branches.find(b => b.name === 'main' && !b.isRemote);
@@ -33,7 +34,12 @@ export function RepoFlowView() {
   useEffect(() => {
     setNodes(initialNodes);
     setEdges(initialEdges);
-  }, [initialNodes, initialEdges, setNodes, setEdges]);
+    
+    // Zoom in like the git graph view
+    setTimeout(() => {
+      setViewport({ x: window.innerWidth / 3, y: 50, zoom: 1 });
+    }, 50);
+  }, [initialNodes, initialEdges, setNodes, setEdges, setViewport]);
 
   // Handle node clicks to select branches
   const onNodeClick = (_: React.MouseEvent, node: any) => {
@@ -54,32 +60,33 @@ export function RepoFlowView() {
   };
 
   return (
-    <div className="flex w-full h-full bg-slate-950">
-      {/* Left Pane: Tree View using React Flow */}
-      <div className="flex-1 relative">
-        <div className="absolute top-6 left-8 z-10 pointer-events-none">
-          <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
-            <GitBranchIcon className="w-8 h-8 text-blue-500" />
-            Repository Flow
-          </h1>
-          <p className="text-slate-400 mt-2 text-sm max-w-sm drop-shadow-md bg-slate-950/50 rounded-md p-1">
-            Click on a branch label to view its details and merge options.
-          </p>
+    <div className="flex w-full h-full bg-slate-950 flex-col">
+      {/* Header Panel */}
+      <div className="flex items-center gap-4 p-6 border-b border-slate-800 bg-slate-950 shrink-0">
+        <GitBranchIcon className="w-8 h-8 text-blue-500" />
+        <div>
+          <h1 className="text-2xl font-bold text-slate-100">Repository Flow</h1>
+          <p className="text-slate-400 text-sm mt-1">Click on a branch label to view its details and merge options.</p>
         </div>
-        
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onNodeClick={onNodeClick}
-          nodeTypes={nodeTypes}
-          fitView
-          minZoom={0.2}
-          maxZoom={2}
-          proOptions={{ hideAttribution: true }}
-          className="bg-slate-950"
-        >
+      </div>
+      
+      <div className="flex-1 flex w-full relative min-h-0">
+        {/* Left Pane: Tree View using React Flow */}
+        <div className="flex-1 relative h-full">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onNodeClick={onNodeClick}
+            nodeTypes={nodeTypes}
+            minZoom={0.2}
+            maxZoom={2}
+            proOptions={{ hideAttribution: true }}
+            className="bg-slate-950"
+            nodesDraggable={false}
+            nodesConnectable={false}
+          >
           <Background color="#1e293b" gap={20} size={1} />
           <Controls className="fill-slate-400 bg-slate-900 border-slate-800" />
         </ReactFlow>
@@ -176,6 +183,15 @@ export function RepoFlowView() {
           </div>
         </div>
       )}
+      </div>
     </div>
+  );
+}
+
+export function RepoFlowView() {
+  return (
+    <ReactFlowProvider>
+      <RepoFlowGraph />
+    </ReactFlowProvider>
   );
 }
