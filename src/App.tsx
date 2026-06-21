@@ -276,6 +276,7 @@ function App() {
           </footer>
         </main>
         </div>
+        <CreateBranchModal />
         <Toaster theme="dark" position="bottom-right" richColors />
       </div>
     </ContextMenuProvider>

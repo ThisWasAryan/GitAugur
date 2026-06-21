@@ -1,4 +1,4 @@
-import { GitBranch, Plus, Copy, Trash2, MoreHorizontal } from "lucide-react";
+import { GitBranch, Copy, Trash2, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { useGitEngineStore } from "../../engine/GitEngineStore";
 import { invoke } from "@tauri-apps/api/core";
@@ -8,7 +8,7 @@ import { useInspectorStore } from "../../stores/useInspectorStore";
 import { useContextMenu } from "../../components/ui/ContextMenu";
 import { ActionPreviewModal } from "../preview/ActionPreviewModal";
 import { useLayoutStore } from "../../stores/useLayoutStore";
-import { CreateBranchModal } from "../preview/CreateBranchModal";
+
 
 export function BranchesView() {
   const { history, checkout, fetchRepoState } = useGitEngineStore();

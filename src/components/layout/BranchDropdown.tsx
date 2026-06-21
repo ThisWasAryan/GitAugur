@@ -6,7 +6,7 @@ import { useLayoutStore } from "../../stores/useLayoutStore";
 
 
 export function BranchDropdown() {
-  const { history, HEAD, checkout, createBranch, stagedFiles, unstagedFiles } = useGitEngineStore();
+  const { history, HEAD, checkout, stagedFiles, unstagedFiles } = useGitEngineStore();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
