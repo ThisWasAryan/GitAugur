@@ -2,13 +2,17 @@ import { useState } from 'react';
 import { useTerminology } from '../../hooks/useTerminology';
 import { useRepositoryStore } from '../../stores/useRepositoryStore';
 import { open } from "@tauri-apps/plugin-dialog";
+import { useLayoutStore } from '../../stores/useLayoutStore';
+import { useNavigationStore } from '../../stores/useNavigationStore';
 
-type MenuState = 'File' | 'Edit' | 'Repository' | 'Branch' | 'History' | 'Tools' | 'Help' | null;
+type MenuState = 'File' | 'Edit' | 'Branch' | 'Tools' | null;
 
 export function MenuBar() {
   const [activeMenu, setActiveMenu] = useState<MenuState>(null);
   const { t } = useTerminology();
   const { setRepoPath } = useRepositoryStore();
+  const setCreateBranchModal = useLayoutStore(state => state.setCreateBranchModal);
+  const setActiveView = useNavigationStore(state => state.setActiveView);
 
   const handleUndo = async () => {
     closeMenu();
@@ -62,11 +66,8 @@ export function MenuBar() {
         {activeMenu === 'File' && (
           <div className="absolute top-full left-0 mt-1 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-xl py-1 z-50">
             <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white" onClick={handleOpenRepo}>Open Repository...</button>
-            <button className="w-full text-left px-4 py-1.5 text-slate-500 cursor-not-allowed">Clone Repository...</button>
             <div className="h-px bg-slate-700 my-1"></div>
             <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white" onClick={handleCloseRepo}>Close Repository</button>
-            <div className="h-px bg-slate-700 my-1"></div>
-            <button className="w-full text-left px-4 py-1.5 text-slate-500 cursor-not-allowed">Exit</button>
           </div>
         )}
       </div>
@@ -82,26 +83,6 @@ export function MenuBar() {
         {activeMenu === 'Edit' && (
           <div className="absolute top-full left-0 mt-1 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-xl py-1 z-50">
             <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white" onClick={handleUndo}>Undo (Reset hard HEAD@1)</button>
-            <button className="w-full text-left px-4 py-1.5 text-slate-500 cursor-not-allowed">Redo</button>
-          </div>
-        )}
-      </div>
-
-      {/* Repository Menu */}
-      <div className="relative">
-        <button 
-          className={`px-3 py-1.5 hover:bg-slate-800 rounded-sm transition-colors ${activeMenu === 'Repository' ? 'bg-slate-800' : ''}`}
-          onClick={() => handleMenuClick('Repository')}
-        >
-          Repository
-        </button>
-        {activeMenu === 'Repository' && (
-          <div className="absolute top-full left-0 mt-1 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-xl py-1 z-50">
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Fetch</button>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Pull</button>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Push</button>
-            <div className="h-px bg-slate-700 my-1"></div>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Sync</button>
           </div>
         )}
       </div>
@@ -116,31 +97,7 @@ export function MenuBar() {
         </button>
         {activeMenu === 'Branch' && (
           <div className="absolute top-full left-0 mt-1 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-xl py-1 z-50">
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Create...</button>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Checkout...</button>
-            <div className="h-px bg-slate-700 my-1"></div>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Merge...</button>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">{t('Rebase')}...</button>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">{t('Cherry Pick')}...</button>
-          </div>
-        )}
-      </div>
-
-      {/* History Menu */}
-      <div className="relative">
-        <button 
-          className={`px-3 py-1.5 hover:bg-slate-800 rounded-sm transition-colors ${activeMenu === 'History' ? 'bg-slate-800' : ''}`}
-          onClick={() => handleMenuClick('History')}
-        >
-          History
-        </button>
-        {activeMenu === 'History' && (
-          <div className="absolute top-full left-0 mt-1 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-xl py-1 z-50">
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Reorder...</button>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">{t('Squash')}...</button>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Revert...</button>
-            <div className="h-px bg-slate-700 my-1"></div>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">{t('Interactive Rebase')}...</button>
+            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white" onClick={() => { closeMenu(); setCreateBranchModal(true); }}>Create...</button>
           </div>
         )}
       </div>
@@ -155,29 +112,8 @@ export function MenuBar() {
         </button>
         {activeMenu === 'Tools' && (
           <div className="absolute top-full left-0 mt-1 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-xl py-1 z-50">
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">{t('Stash')}es</button>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Tags</button>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Releases</button>
-            <div className="h-px bg-slate-700 my-1"></div>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Conflict Resolution</button>
-          </div>
-        )}
-      </div>
-
-      {/* Help Menu */}
-      <div className="relative">
-        <button 
-          className={`px-3 py-1.5 hover:bg-slate-800 rounded-sm transition-colors ${activeMenu === 'Help' ? 'bg-slate-800' : ''}`}
-          onClick={() => handleMenuClick('Help')}
-        >
-          Help
-        </button>
-        {activeMenu === 'Help' && (
-          <div className="absolute top-full left-0 mt-1 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-xl py-1 z-50">
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Documentation</button>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">Learning Mode</button>
-            <div className="h-px bg-slate-700 my-1"></div>
-            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white">About GitAugur</button>
+            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white" onClick={() => { closeMenu(); setActiveView('Stashes'); }}>{t('Stash')}es</button>
+            <button className="w-full text-left px-4 py-1.5 hover:bg-blue-600 hover:text-white" onClick={() => { closeMenu(); setActiveView('Tags'); }}>Tags</button>
           </div>
         )}
       </div>
