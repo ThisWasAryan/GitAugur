@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { X, GitCommit, Clock, User, GitBranch, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
+import { InteractiveRebaseModal } from "../preview/InteractiveRebaseModal";
 
 export function CommitInspector() {
   const { history, selectCommitFile, selectedFile } = useGitEngineStore();
@@ -13,6 +14,7 @@ export function CommitInspector() {
 
   const [files, setFiles] = useState<{path: string, status: string}[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [interactiveRebaseHash, setInteractiveRebaseHash] = useState<string | null>(null);
 
   const commit = history.commits.find(c => c.hash === inspectedEntityId);
 
@@ -88,6 +90,12 @@ export function CommitInspector() {
             </span>
             <div className="flex items-center gap-2">
               <button
+                onClick={() => setInteractiveRebaseHash(commit.hash)}
+                className="px-2 py-1 bg-amber-900/30 hover:bg-amber-800/40 text-amber-400 text-xs rounded transition-colors font-medium border border-amber-900/50 hover:border-amber-700/50"
+              >
+                Rebase from Here
+              </button>
+              <button
                 onClick={() => useGitEngineStore.getState().cherryPick(commit.hash)}
                 className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded transition-colors font-medium border border-slate-700 hover:border-slate-600"
               >
@@ -147,6 +155,14 @@ export function CommitInspector() {
         </div>
 
       </div>
+
+      {interactiveRebaseHash && (
+        <InteractiveRebaseModal
+          isOpen={true}
+          onClose={() => setInteractiveRebaseHash(null)}
+          baseCommitHash={interactiveRebaseHash}
+        />
+      )}
     </div>
   );
 }

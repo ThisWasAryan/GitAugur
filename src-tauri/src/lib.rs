@@ -54,6 +54,13 @@ pub fn run() {
             commands::git_merge_tree,
             commands::git_apply_cached,
             commands::git_rebase_interactive,
+            commands::git_blame,
+            commands::git_submodule_list,
+            commands::git_submodule_add,
+            commands::git_submodule_update,
+            commands::git_worktree_list,
+            commands::git_worktree_add,
+            commands::git_worktree_remove,
             github::gh_auth_status,
             github::gh_pr_list
         ])

@@ -63,9 +63,11 @@ export function PullRequestsView() {
       <ActionPreviewModal 
         isOpen={preview.isOpen}
         onClose={() => setPreview({ ...preview, isOpen: false })}
-        onConfirm={() => {
-          // Mock merge action
-          console.log(`Merged ${preview.source} into ${preview.target}`);
+        onConfirm={async (strategy) => {
+          const { useGitEngineStore } = await import('../../engine/GitEngineStore');
+          if (preview.source) {
+            useGitEngineStore.getState().merge(preview.source, strategy);
+          }
         }}
         action="MERGE"
         branchName={preview.source}

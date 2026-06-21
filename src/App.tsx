@@ -15,6 +15,10 @@ import { StashesView } from "./features/views/StashesView";
 import { RepoFlowView } from "./features/views/RepoFlowView";
 import { TutorPanel } from "./components/layout/TutorPanel";
 import { DiffViewer } from "./features/staging/DiffViewer";
+import { BlameViewer } from "./features/staging/BlameViewer";
+import { ReflogView } from "./features/views/ReflogView";
+import { SubmodulesView } from "./features/views/SubmodulesView";
+import { WorktreesView } from "./features/views/WorktreesView";
 import { ArrowUp, ArrowDown, RefreshCw, CheckCircle2, AlertTriangle, PanelLeft, PanelRight, X } from "lucide-react";
 import { useRepositoryStore } from "./stores/useRepositoryStore";
 import { useNavigationStore } from "./stores/useNavigationStore";
@@ -114,6 +118,9 @@ function App() {
       case 'Releases': return <ReleasesView />;
       case 'Pull Requests': return <PullRequestsView />;
       case 'Stashes': return <StashesView />;
+      case 'Reflog': return <ReflogView />;
+      case 'Submodules': return <SubmodulesView />;
+      case 'Worktrees': return <WorktreesView />;
       case 'Settings': return <SettingsView />;
       case 'History':
       default:
@@ -121,7 +128,27 @@ function App() {
           return (
             <div className="flex-1 relative flex flex-col p-4 overflow-hidden bg-slate-950">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-slate-200">Diff Viewer</h3>
+                <div className="flex items-center gap-4">
+                  <h3 className="text-lg font-semibold text-slate-200">File Viewer</h3>
+                  <div className="flex bg-slate-900 rounded-lg p-1 border border-slate-800">
+                    <button
+                      onClick={() => {
+                        useGitEngineStore.setState({ selectedFileBlame: null });
+                      }}
+                      className={`px-3 py-1 text-xs font-medium rounded ${!useGitEngineStore.getState().selectedFileBlame ? 'bg-slate-800 text-slate-200' : 'text-slate-400 hover:text-slate-300'}`}
+                    >
+                      Diff
+                    </button>
+                    <button
+                      onClick={() => {
+                        useGitEngineStore.getState().fetchBlame(selectedFile);
+                      }}
+                      className={`px-3 py-1 text-xs font-medium rounded ${useGitEngineStore.getState().selectedFileBlame ? 'bg-slate-800 text-slate-200' : 'text-slate-400 hover:text-slate-300'}`}
+                    >
+                      Blame
+                    </button>
+                  </div>
+                </div>
                 <button 
                   onClick={clearSelection}
                   className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-md transition-colors text-slate-400 hover:text-slate-200"
@@ -130,7 +157,9 @@ function App() {
                 </button>
               </div>
               <div className="flex-1 overflow-hidden">
-                {selectedFileDiff === null ? (
+                {useGitEngineStore.getState().selectedFileBlame ? (
+                  <BlameViewer blameRaw={useGitEngineStore.getState().selectedFileBlame || ''} filename={selectedFile} />
+                ) : selectedFileDiff === null ? (
                   <div className="h-full flex items-center justify-center">
                     <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
                   </div>

@@ -35,10 +35,12 @@ A rich, analytical Branches page that mimics the industry-standard GitHub layout
 GitAugur intelligently monitors your working directory. 
 - The **Source Control Right Sidebar** auto-opens the moment you modify files, providing a pristine staging area.
 - Select files to view an embedded **Side-by-Side Diff Viewer**.
+- **File Blame Analysis**: Hover over file lines in the active diff to instantly trace the author, commit hash, and timestamp of every single line change.
 - Stage individual files, unstage files, and securely compose commit messages with ease.
 
-### 4. Interactive Conflict Resolution
-GitAugur turns the dreaded "Merge Conflict" into a seamless workflow:
+### 4. Interactive Conflict Resolution & Rebasing
+GitAugur turns the dreaded "Merge Conflict" and complex rebasing into a seamless workflow:
+- **Interactive Rebase Editor**: Drag-and-drop commits to reorder, squash, fixup, edit, or drop them directly from a clean visual interface instead of manually typing inside a terminal text file.
 - **Side-by-Side Resolution Editor**: Clean, human-readable labels (e.g., "Your Branch" vs. "Incoming Changes") instead of confusing `HEAD` hashes.
 - **Dynamic State Resumption**: Automatically detects whether you are stuck in a Merge, Rebase, or Cherry-Pick, and offers context-aware Continue or Abort buttons.
 - **Cherry-Pick Resilience**: Automatically detects and handles "empty cherry-picks" (changes already present) by executing `git cherry-pick --skip` silently, keeping your workflow uninterrupted.
@@ -49,6 +51,9 @@ Click on any entity in the Repo Flow or Git Graph to view rich metadata:
 - **Branch Inspector**: Quick commands to rebase your current branch onto the target, view sync status, and inspect the Head Commit.
 
 ### 6. Extended Tooling & Workspaces
+- **Reflog Explorer**: A powerful time-machine view that exposes Git's internal diary, letting you magically recover deleted branches, lost commits, and undone operations.
+- **Submodules Manager**: Visually track, initialize, and update external dependencies embedded within your repository.
+- **Worktrees Integration**: Seamlessly manage multiple working trees linked to the same repository, perfect for working on multiple branches simultaneously without stashing.
 - **Stashes View**: Manage, apply, and drop your stashed works-in-progress.
 - **Tags View**: Browse and manage your annotated tags and release versions.
 - **Repository Files**: Explore the actual file structure of the currently checked-out commit.

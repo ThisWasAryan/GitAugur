@@ -21,6 +21,9 @@ export function Sidebar() {
     { name: "Tags", icon: Tags },
     { name: "Contributors", icon: Users },
     { name: "Stashes", icon: Archive },
+    { name: "Reflog", icon: History },
+    { name: "Submodules", icon: FolderGit2 },
+    { name: "Worktrees", icon: FolderGit2 },
   ];
 
   return (

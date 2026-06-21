@@ -40,6 +40,9 @@ interface GitEngineState {
   unstagedFiles: FileStatus[];
   stagedFiles: FileStatus[];
   stashes: Stash[];
+  worktrees: any[];
+  submodules: any[];
+  repoPath: string | null;
   
   // Preview System
   preview: PreviewState;
@@ -48,27 +51,30 @@ interface GitEngineState {
   selectedFile: string | null;
   selectedFileDiff: string | null;
   selectedFileIsStaged: boolean;
+  selectedFileBlame: string | null;
 
-  // Actions
+  fetchWorktrees: () => Promise<void>;
+  fetchSubmodules: () => Promise<void>;
   stageFile: (path: string) => void;
   unstageFile: (path: string) => void;
   stageAll: () => void;
   unstageAll: () => void;
   selectFile: (path: string) => void;
   selectCommitFile: (commitHash: string, path: string) => void;
+  fetchBlame: (path: string) => Promise<void>;
   clearSelection: () => void;
   
   // Workflows
   previewCommit: (message: string) => void;
   clearPreview: () => void;
-  commit: (message: string) => void;
+  commit: (message: string, amend?: boolean, skipHooks?: boolean) => void;
   
   checkout: (ref: string) => void;
   createBranch: (name: string, baseBranch?: string) => void;
   previewMerge: (sourceBranch: string, targetBranch: string) => Promise<void>;
   rebase: (targetBranch: string) => Promise<void>;
   cherryPick: (commitHash: string) => Promise<void>;
-  merge: (sourceBranch: string) => Promise<void>;
+  merge: (sourceBranch: string, strategy?: 'standard' | 'squash' | 'ff-only') => Promise<void>;
   undo: () => Promise<void>;
   fetchReflog: () => Promise<any[]>;
   
@@ -96,43 +102,52 @@ export const useGitEngineStore = create<GitEngineState>((set, get) => ({
   selectedFile: null,
   selectedFileDiff: null,
   selectedFileIsStaged: false,
+  selectedFileBlame: null,
+  worktrees: [],
+  submodules: [],
+  repoPath: null,
 
-  selectFile: async (path) => {
-    set({ selectedFile: path, selectedFileDiff: null });
+  fetchBlame: async (path: string) => {
     const repoPath = useRepositoryStore.getState().repoPath;
     if (repoPath) {
       try {
-        // We assume it's unstaged first. If not found in unstaged, we might need to check if it's staged
-        // For simplicity, we just run git diff. If it returns empty, run git diff --cached.
-        let diffData: any = await invoke('git_diff', { repoPath, file: path, cached: false });
-        if (!diffData.stdout) {
-          diffData = await invoke('git_diff', { repoPath, file: path, cached: true });
-          set({ selectedFileDiff: diffData.stdout, selectedFileIsStaged: true });
-        } else {
-          set({ selectedFileDiff: diffData.stdout, selectedFileIsStaged: false });
+        const res: any = await invoke('git_blame', { repoPath, filePath: path });
+        if (res.success && res.stdout) {
+          set({ selectedFileBlame: res.stdout });
         }
       } catch (err) {
-        toast.error(`Failed to fetch diff: ${err}`);
+        console.error("Failed to fetch blame:", err);
+      }
+    }
+  },
+
+  selectFile: async (path: string) => {
+    set({ selectedFile: path, selectedFileDiff: null, selectedFileBlame: null });
+    const repoPath = useRepositoryStore.getState().repoPath;
+    if (repoPath) {
+      try {
+        const diffData: any = await invoke('git_diff', { repoPath, filePath: path, staged: true });
+        if (diffData.success && diffData.stdout.trim() !== '') {
+          set({ selectedFileDiff: diffData.stdout, selectedFileIsStaged: true });
+        } else {
+          const unstagedData: any = await invoke('git_diff', { repoPath, filePath: path, staged: false });
+          set({ selectedFileDiff: unstagedData.stdout, selectedFileIsStaged: false });
+        }
+      } catch (err) {
+        console.error(err);
       }
     } else {
       set({ selectedFileDiff: null });
     }
   },
 
-  selectCommitFile: async (commitHash, path) => {
-    set({ selectedFile: path, selectedFileDiff: null });
+  selectCommitFile: async (commitHash: string, path: string) => {
+    set({ selectedFile: path, selectedFileDiff: null, selectedFileBlame: null });
     const repoPath = useRepositoryStore.getState().repoPath;
     if (repoPath) {
       try {
-        await invoke('git_exec', { 
+        const diffPatch: any = await invoke('git_exec', { 
           repoPath, 
-          args: ['show', `${commitHash}:${path}`] 
-        });
-        
-        // Wait, git show <commit>:<path> gets the full file content, not the diff!
-        // To get the diff for the file in that commit compared to its parent:
-        const diffPatch: any = await invoke('git_exec', {
-          repoPath,
           args: ['show', commitHash, '--', path]
         });
 
@@ -283,11 +298,11 @@ export const useGitEngineStore = create<GitEngineState>((set, get) => ({
 
   clearPreview: () => set({ preview: { active: false, type: null } }),
 
-  commit: async (message) => {
+  commit: async (message, amend = false, skipHooks = false) => {
     const repoPath = useRepositoryStore.getState().repoPath;
     if (repoPath) {
       try {
-        await invoke('git_commit', { repoPath, message });
+        await invoke('git_commit', { repoPath, message, amend, noVerify: skipHooks });
         set({ preview: { active: false, type: null } });
         get().fetchRepoState(repoPath);
       } catch (err) {
@@ -455,13 +470,24 @@ export const useGitEngineStore = create<GitEngineState>((set, get) => ({
     }
   },
 
-  merge: async (sourceBranch: string) => {
+  merge: async (sourceBranch: string, strategy?: 'standard' | 'squash' | 'ff-only') => {
     const repoPath = useRepositoryStore.getState().repoPath;
     if (repoPath) {
       try {
-        const result: any = await invoke('git_exec', { repoPath, args: ['merge', '--no-ff', '--no-commit', sourceBranch] });
+        let args = ['merge', '--no-ff', '--no-commit', sourceBranch];
+        if (strategy === 'squash') {
+          args = ['merge', '--squash', sourceBranch];
+        } else if (strategy === 'ff-only') {
+          args = ['merge', '--ff-only', sourceBranch];
+        }
+
+        const result: any = await invoke('git_exec', { repoPath, args });
         if (result.success) {
-          toast.success(`Merge prepared for ${sourceBranch}. Please finalize and add your commit message.`);
+          if (strategy === 'ff-only') {
+            toast.success(`Fast-forward merge successful for ${sourceBranch}.`);
+          } else {
+            toast.success(`Merge prepared for ${sourceBranch}. Please finalize and add your commit message.`);
+          }
         } else {
           toast.error(`Failed to merge: ${result.stderr || result.stdout}`);
         }
@@ -593,6 +619,45 @@ export const useGitEngineStore = create<GitEngineState>((set, get) => ({
       
     } catch (err) {
       toast.error(`Failed to fetch repo state: ${err}`);
+    }
+  },
+
+  fetchWorktrees: async () => {
+    const repoPath = useRepositoryStore.getState().repoPath;
+    if (repoPath) {
+      try {
+        const res: any = await invoke('git_worktree_list', { repoPath });
+        if (res.success && res.stdout) {
+          const lines = res.stdout.split('\n').filter(Boolean);
+          const worktrees = lines.map((line: string) => {
+            const parts = line.split(' ');
+            return { path: parts[0], commit: parts[1], branch: parts[2] ? parts[2].replace(/[\[\]]/g, '') : null };
+          });
+          set({ worktrees });
+        }
+      } catch (err) {
+        console.error("Failed to fetch worktrees:", err);
+      }
+    }
+  },
+
+  fetchSubmodules: async () => {
+    const repoPath = useRepositoryStore.getState().repoPath;
+    if (repoPath) {
+      try {
+        const res: any = await invoke('git_submodule_list', { repoPath });
+        if (res.success && res.stdout) {
+          const lines = res.stdout.split('\n').filter(Boolean);
+          const submodules = lines.map((line: string) => {
+            const cleanLine = line.trim();
+            const parts = cleanLine.split(' ');
+            return { hash: parts[0], path: parts[1], status: line.startsWith('-') ? 'uninitialized' : line.startsWith('+') ? 'modified' : 'up-to-date' };
+          });
+          set({ submodules });
+        }
+      } catch (err) {
+        console.error("Failed to fetch submodules:", err);
+      }
     }
   }
 }));

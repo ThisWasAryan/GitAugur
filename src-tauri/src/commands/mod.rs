@@ -112,8 +112,15 @@ pub fn git_add(app: AppHandle, repo_path: String, files: Vec<String>) -> Result<
 }
 
 #[tauri::command]
-pub fn git_commit(app: AppHandle, repo_path: String, message: String) -> Result<GitResult, String> {
-    execute_and_emit(&app, &repo_path, "Commit", &["commit", "-m", &message])
+pub fn git_commit(app: AppHandle, repo_path: String, message: String, amend: bool, no_verify: bool) -> Result<GitResult, String> {
+    let mut args = vec!["commit", "-m", &message];
+    if amend {
+        args.push("--amend");
+    }
+    if no_verify {
+        args.push("--no-verify");
+    }
+    execute_and_emit(&app, &repo_path, "Commit", &args)
 }
 
 #[tauri::command]
@@ -138,8 +145,17 @@ pub fn git_checkout(app: AppHandle, repo_path: String, branch: String) -> Result
 }
 
 #[tauri::command]
-pub fn git_merge(app: AppHandle, repo_path: String, branch: String) -> Result<GitResult, String> {
-    execute_and_emit(&app, &repo_path, "Merge", &["merge", &branch])
+pub fn git_merge(app: AppHandle, repo_path: String, branch: String, strategy: Option<String>) -> Result<GitResult, String> {
+    let mut args = vec!["merge"];
+    if let Some(strat) = &strategy {
+        if strat == "squash" {
+            args.push("--squash");
+        } else if strat == "ff-only" {
+            args.push("--ff-only");
+        }
+    }
+    args.push(&branch);
+    execute_and_emit(&app, &repo_path, "Merge", &args)
 }
 
 #[tauri::command]
@@ -591,4 +607,39 @@ pub fn git_rebase_interactive(app: AppHandle, repo_path: String, branch: String,
         success,
         exit_code: output.status.code().unwrap_or(-1),
     })
+}
+
+#[tauri::command]
+pub fn git_blame(app: AppHandle, repo_path: String, file_path: String) -> Result<GitResult, String> {
+    execute_and_emit(&app, &repo_path, "Blame", &["blame", "--line-porcelain", &file_path])
+}
+
+#[tauri::command]
+pub fn git_submodule_list(app: AppHandle, repo_path: String) -> Result<GitResult, String> {
+    execute_and_emit(&app, &repo_path, "Submodule List", &["submodule", "status"])
+}
+
+#[tauri::command]
+pub fn git_submodule_add(app: AppHandle, repo_path: String, url: String, path: String) -> Result<GitResult, String> {
+    execute_and_emit(&app, &repo_path, "Submodule Add", &["submodule", "add", &url, &path])
+}
+
+#[tauri::command]
+pub fn git_submodule_update(app: AppHandle, repo_path: String) -> Result<GitResult, String> {
+    execute_and_emit(&app, &repo_path, "Submodule Update", &["submodule", "update", "--init", "--recursive"])
+}
+
+#[tauri::command]
+pub fn git_worktree_list(app: AppHandle, repo_path: String) -> Result<GitResult, String> {
+    execute_and_emit(&app, &repo_path, "Worktree List", &["worktree", "list", "--porcelain"])
+}
+
+#[tauri::command]
+pub fn git_worktree_add(app: AppHandle, repo_path: String, path: String, branch: String) -> Result<GitResult, String> {
+    execute_and_emit(&app, &repo_path, "Worktree Add", &["worktree", "add", &path, &branch])
+}
+
+#[tauri::command]
+pub fn git_worktree_remove(app: AppHandle, repo_path: String, path: String) -> Result<GitResult, String> {
+    execute_and_emit(&app, &repo_path, "Worktree Remove", &["worktree", "remove", &path])
 }
