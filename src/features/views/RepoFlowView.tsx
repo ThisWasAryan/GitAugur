@@ -15,12 +15,14 @@ const nodeTypes = {
 function RepoFlowGraph() {
   const { history } = useGitEngineStore();
   const [selectedBranchName, setSelectedBranchName] = useState<string | null>(null);
-  const { setViewport } = useReactFlow();
+  const [selectedCommitHash, setSelectedCommitHash] = useState<string | null>(null);
+  const { setCenter } = useReactFlow();
 
   const branches = history.branches;
   const mainBranch = branches.find(b => b.name === 'main' && !b.isRemote);
 
   const selectedBranch = branches.find(b => b.name === selectedBranchName && !b.isRemote);
+  const selectedCommit = history.commits.find(c => c.hash === selectedCommitHash);
 
   // Compute Layout
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
@@ -35,16 +37,29 @@ function RepoFlowGraph() {
     setNodes(initialNodes);
     setEdges(initialEdges);
     
-    // Zoom in like the git graph view
+    // Zoom in to the newest commit (which should be at the bottom)
     setTimeout(() => {
-      setViewport({ x: window.innerWidth / 3, y: 50, zoom: 1 });
+      if (initialNodes.length > 0) {
+        // Dagre puts leaves at the bottom. We can just find the max Y node to be safe
+        let maxYNode = initialNodes[0];
+        for (const node of initialNodes) {
+          if (node.position.y > maxYNode.position.y) {
+            maxYNode = node;
+          }
+        }
+        setCenter(maxYNode.position.x + 32, maxYNode.position.y, { zoom: 1, duration: 800 });
+      }
     }, 50);
-  }, [initialNodes, initialEdges, setNodes, setEdges, setViewport]);
+  }, [initialNodes, initialEdges, setNodes, setEdges, setCenter]);
 
-  // Handle node clicks to select branches
+  // Handle node clicks to select branches or commits
   const onNodeClick = (_: React.MouseEvent, node: any) => {
     if (node.type === 'labelNode' && node.data.type === 'branch') {
       setSelectedBranchName(node.data.name);
+      setSelectedCommitHash(null);
+    } else if (node.type === 'commitNode') {
+      setSelectedCommitHash(node.data.hash);
+      setSelectedBranchName(null);
     }
   };
 
@@ -92,8 +107,48 @@ function RepoFlowGraph() {
         </ReactFlow>
       </div>
 
+      {/* Right Pane: Commit Details Sidebar */}
+      {selectedCommit && !selectedBranch && (
+        <div className="w-[400px] border-l border-slate-800 bg-slate-900/50 flex flex-col shrink-0 animate-in slide-in-from-right-8 duration-300 relative z-20">
+          <button 
+            onClick={() => setSelectedCommitHash(null)}
+            className="absolute top-4 right-4 text-slate-400 hover:text-white"
+          >
+            ✕
+          </button>
+          
+          <div className="p-6 border-b border-slate-800">
+            <h2 className="text-xl font-bold font-mono text-slate-200 flex items-center gap-2">
+              Commit
+            </h2>
+            <p className="text-sm font-mono text-blue-400 mt-2">{selectedCommit.hash.substring(0, 8)}</p>
+          </div>
+
+          <div className="p-6 flex-1 overflow-y-auto">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Commit Details</h3>
+            
+            <div className="space-y-4 mb-8">
+              <div className="flex flex-col gap-1">
+                <span className="text-slate-400 text-sm">Author</span>
+                <span className="text-slate-200 text-sm">{selectedCommit.author.name} &lt;{selectedCommit.author.email}&gt;</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-slate-400 text-sm">Date</span>
+                <span className="text-slate-200 text-sm">{new Date(selectedCommit.timestamp).toLocaleString()}</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-slate-400 text-sm">Message</span>
+                <div className="bg-slate-950 p-3 rounded-md border border-slate-800 mt-1">
+                  <span className="text-slate-300 text-sm whitespace-pre-wrap">{selectedCommit.message}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Right Pane: Branch Details Sidebar */}
-      {selectedBranch && (
+      {selectedBranch && !selectedCommit && (
         <div className="w-[400px] border-l border-slate-800 bg-slate-900/50 flex flex-col shrink-0 animate-in slide-in-from-right-8 duration-300 relative z-20">
           <button 
             onClick={() => setSelectedBranchName(null)}
