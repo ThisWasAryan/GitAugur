@@ -66,7 +66,7 @@ export function CommitGraph() {
         proOptions={{ hideAttribution: true }}
         nodesDraggable={false}
         nodesConnectable={false}
-        elementsSelectable={true}
+        elementsSelectable={false}
       >
         <Background color="#334155" gap={24} size={1.5} />
         <Controls className="bg-slate-900 border-slate-800 fill-slate-300" />

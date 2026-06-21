@@ -1,4 +1,4 @@
-import { BaseEdge, type EdgeProps, getSmoothStepPath, Position } from '@xyflow/react';
+import { BaseEdge, type EdgeProps } from '@xyflow/react';
 import { colorForBranch, GHOST_COLOR } from '../../utils/branchColors';
 
 export function StrictLaneEdge({
@@ -22,23 +22,24 @@ export function StrictLaneEdge({
     stroke: isGhost ? GHOST_COLOR.stroke : bColor.stroke
   };
   
+  // The total vertical distance for the curve
+  const maxOffset = Math.abs(targetY - sourceY);
+  const curveOffset = Math.min(24, maxOffset); 
+  
   let path = '';
   
-  if (Math.abs(sourceX - targetX) < 1) {
+  if (sourceX === targetX) {
     // Same lane, straight line
     path = `M ${sourceX},${sourceY} L ${targetX},${targetY}`;
   } else {
-    // Different lanes. Use smooth step path.
-    const [smoothPath] = getSmoothStepPath({
-      sourceX,
-      sourceY,
-      sourcePosition: Position.Bottom,
-      targetPosition: Position.Top,
-      targetX,
-      targetY,
-      borderRadius: 16,
-    });
-    path = smoothPath;
+    // Different lanes. Curve immediately below the source into the target lane,
+    // then go straight down.
+    
+    // Start curve immediately at sourceY
+    path = `M ${sourceX},${sourceY} Q ${sourceX},${sourceY + curveOffset/2} ${(sourceX+targetX)/2},${sourceY + curveOffset/2} T ${targetX},${sourceY + curveOffset}`;
+    
+    // Then straight down to target
+    path += ` L ${targetX},${targetY}`;
   }
 
   return (

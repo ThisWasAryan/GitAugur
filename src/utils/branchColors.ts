@@ -2,17 +2,18 @@
 
 // A visually distinct, GitKraken-like color palette for branches
 export const branchColorPalette = [
-  { bg: "bg-blue-500", border: "border-blue-500", text: "text-blue-400", line: "bg-blue-500", stroke: "#3b82f6" },
-  { bg: "bg-emerald-500", border: "border-emerald-500", text: "text-emerald-400", line: "bg-emerald-500", stroke: "#10b981" },
-  { bg: "bg-amber-500", border: "border-amber-500", text: "text-amber-400", line: "bg-amber-500", stroke: "#f59e0b" },
-  { bg: "bg-purple-500", border: "border-purple-500", text: "text-purple-400", line: "bg-purple-500", stroke: "#a855f7" },
-  { bg: "bg-rose-500", border: "border-rose-500", text: "text-rose-400", line: "bg-rose-500", stroke: "#f43f5e" },
-  { bg: "bg-cyan-500", border: "border-cyan-500", text: "text-cyan-400", line: "bg-cyan-500", stroke: "#06b6d4" },
-  { bg: "bg-lime-500", border: "border-lime-500", text: "text-lime-400", line: "bg-lime-500", stroke: "#84cc16" },
-  { bg: "bg-orange-500", border: "border-orange-500", text: "text-orange-400", line: "bg-orange-500", stroke: "#f97316" },
-  { bg: "bg-pink-500", border: "border-pink-500", text: "text-pink-400", line: "bg-pink-500", stroke: "#ec4899" },
-  { bg: "bg-yellow-500", border: "border-yellow-500", text: "text-yellow-400", line: "bg-yellow-500", stroke: "#eab308" },
-  { bg: "bg-red-500", border: "border-red-500", text: "text-red-400", line: "bg-red-500", stroke: "#ef4444" }
+  { bg: "bg-[#FF0000]", border: "border-[#FF0000]", text: "text-[#FF0000]", line: "bg-[#FF0000]", stroke: "#FF0000" },
+  { bg: "bg-[#00FF00]", border: "border-[#00FF00]", text: "text-[#00FF00]", line: "bg-[#00FF00]", stroke: "#00FF00" },
+  { bg: "bg-[#0000FF]", border: "border-[#0000FF]", text: "text-[#0000FF]", line: "bg-[#0000FF]", stroke: "#0000FF" },
+  { bg: "bg-[#FFFF00]", border: "border-[#FFFF00]", text: "text-[#FFFF00]", line: "bg-[#FFFF00]", stroke: "#FFFF00" },
+  { bg: "bg-[#FF00FF]", border: "border-[#FF00FF]", text: "text-[#FF00FF]", line: "bg-[#FF00FF]", stroke: "#FF00FF" },
+  { bg: "bg-[#00FFFF]", border: "border-[#00FFFF]", text: "text-[#00FFFF]", line: "bg-[#00FFFF]", stroke: "#00FFFF" },
+  { bg: "bg-[#FF8000]", border: "border-[#FF8000]", text: "text-[#FF8000]", line: "bg-[#FF8000]", stroke: "#FF8000" },
+  { bg: "bg-[#8000FF]", border: "border-[#8000FF]", text: "text-[#8000FF]", line: "bg-[#8000FF]", stroke: "#8000FF" },
+  { bg: "bg-[#00FF80]", border: "border-[#00FF80]", text: "text-[#00FF80]", line: "bg-[#00FF80]", stroke: "#00FF80" },
+  { bg: "bg-[#FF0080]", border: "border-[#FF0080]", text: "text-[#FF0080]", line: "bg-[#FF0080]", stroke: "#FF0080" },
+  { bg: "bg-[#80FF00]", border: "border-[#80FF00]", text: "text-[#80FF00]", line: "bg-[#80FF00]", stroke: "#80FF00" },
+  { bg: "bg-[#0080FF]", border: "border-[#0080FF]", text: "text-[#0080FF]", line: "bg-[#0080FF]", stroke: "#0080FF" }
 ];
 
 export const GHOST_COLOR = { bg: "bg-slate-400", border: "border-slate-400", text: "text-slate-400", line: "bg-slate-400", stroke: "#94a3b8" };

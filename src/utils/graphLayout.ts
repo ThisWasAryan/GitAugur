@@ -46,8 +46,7 @@ export function buildGraphLayout(history: GitHistory, preview?: PreviewState): {
       name: preview.targetBranch,
       commitHash: preview.ghostCommit.hash,
       isRemote: false,
-      upstream: undefined,
-      isCurrent: true
+      upstream: undefined
     });
   }
 
