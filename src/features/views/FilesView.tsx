@@ -91,7 +91,7 @@ export function FilesView() {
     <div className="flex-1 flex h-full bg-slate-950 text-slate-300">
       {/* File Tree Panel */}
       <div className="w-80 border-r border-slate-800 flex flex-col h-full bg-slate-900/50">
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="h-14 px-4 border-b border-slate-800 flex items-center justify-between shrink-0">
           <h2 className="font-semibold text-slate-200">Repository Files</h2>
           <span className="text-xs bg-slate-800 px-2 py-0.5 rounded text-slate-400 font-mono truncate max-w-[120px]">{HEAD || 'HEAD'}</span>
         </div>

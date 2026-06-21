@@ -19,7 +19,7 @@ export function StagingPanel() {
 
   return (
     <div className="w-80 h-full bg-slate-900 border-l border-slate-800 flex flex-col shrink-0">
-      <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+      <div className="h-14 px-4 border-b border-slate-800 flex items-center justify-between shrink-0">
         <h2 className="font-semibold text-slate-200">Source Control</h2>
         <div className="flex gap-1">
           {/* Action buttons could go here */}

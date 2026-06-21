@@ -30,7 +30,7 @@ export function PullRequestInspector() {
 
   return (
     <div className="w-[400px] h-full bg-slate-900 border-l border-slate-800 flex flex-col shrink-0">
-      <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-800/50">
+      <div className="h-14 px-4 border-b border-slate-800 flex items-center justify-between bg-slate-800/50 shrink-0">
         <h2 className="font-semibold text-slate-200 flex items-center gap-2">
           <GitPullRequest className="w-4 h-4 text-blue-500" />
           Pull Request

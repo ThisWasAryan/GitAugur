@@ -25,8 +25,8 @@ export function Sidebar() {
 
   return (
     <div className="w-64 h-full bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0">
-      <div className="p-4 border-b border-slate-800 flex items-center gap-2">
-        <h1 className="font-semibold text-white">GitAugur</h1>
+      <div className="h-14 px-4 border-b border-slate-800 flex items-center shrink-0">
+        <h1 className="text-xl font-bold text-white tracking-wide">GitAugur</h1>
       </div>
       
       <div className="p-4 flex-1 overflow-y-auto">
